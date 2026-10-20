@@ -28,3 +28,4 @@ QA: Lynde Narvaez (main), Kent Dampayla (support), Jannyl Santillas (support)
 3. Commit your changes and open a Pull Request to develop.
 4. Another member must approve the Pull Request (1 approval required).
 5. Merge after approval. The Team Leader merges develop into main.
+6. Keep backend and frontend code in separate folders.
