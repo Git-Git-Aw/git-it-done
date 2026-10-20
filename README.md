@@ -1,58 +1,30 @@
-\# git-it-done
+# Git Inside
 
+A Dormitory Tenant and Landlord Management System
 
+## Project Scope
+Git Inside is a cross platform app (mobile, web, desktop) that connects dormitory tenants and landlords. Tenants can view their room, balance, due dates, and payment history, and report repair issues. Landlords can manage rooms, tenants, payments, and maintenance reports. An AI Dorm Manager chatbox answers questions using system data, and any action that changes data needs landlord approval.
 
-\## Project Scope
+## Team
+Team name: Git Git Aw (CS B)
+Submitted to: Sir Henzon Paul Dionsay
 
-This repository is the team's backup for Activity 1: Organization Creation for Application Development in GitHub. It documents the Git and GitHub workflow used by the team: repository setup, branching, pull requests, and merging.
+## Members and Roles
+Team Leader: Karl Capilitan (main), Jessa Languido (support)
+Project Manager: Jannyl Santillas (main), Kent Dampayla (support), Lynde Narvaez (support)
+Developer: Jessa Languido (main), Karl Capilitan (support)
+QA: Lynde Narvaez (main), Kent Dampayla (support), Jannyl Santillas (support)
 
+## Setup Instructions
+1. Install Git, Flutter SDK, Node.js, and MySQL.
+2. Clone the repository: git clone https://github.com/Git-Git-Aw/git-it-done.git
+3. Set your Git name and email.
+4. Run the backend on localhost (Node.js and Express).
+5. Run the Flutter app on an emulator, browser, or desktop.
 
-
-\## Setup Instructions
-
-1\. Install Git from git-scm.com (Windows).
-
-2\. Set your identity:
-
-&#x20;  - git config --global user.name "Your Name"
-
-&#x20;  - git config --global user.email "your-github-email"
-
-&#x20;  - git config --global init.defaultBranch main
-
-3\. Clone this repository:
-
-&#x20;  - git clone https://github.com/jessadondoyanolanguido8-bot/git-it-done.git
-
-4\. Move into the folder:
-
-&#x20;  - cd git-it-done
-
-
-
-\## Contribution Guide
-
-\- Never commit directly to main.
-
-\- Branches:
-
-&#x20; - main: production-ready, stable code
-
-&#x20; - develop: integration branch for active development
-
-&#x20; - feature/<feature-name>: short-lived branches for specific tasks
-
-&#x20; - bugfix/<issue-name>: branches for fixing issues found by QA
-
-\- Workflow:
-
-&#x20; 1. Create a branch: git checkout -b feature/<feature-name>
-
-&#x20; 2. Make changes, then: git add . and git commit -m "message"
-
-&#x20; 3. Push the branch: git push -u origin feature/<feature-name>
-
-&#x20; 4. Open a Pull Request on GitHub and wait for review and approval.
-
-&#x20; 5. After the merge, update your local main: git checkout main, then git pull origin main
-
+## Contribution Guide
+1. Do not push directly to main or develop.
+2. Create a branch from develop: feature/<feature name> or bugfix/<issue name>.
+3. Commit your changes and open a Pull Request to develop.
+4. Another member must approve the Pull Request (1 approval required).
+5. Merge after approval. The Team Leader merges develop into main.
