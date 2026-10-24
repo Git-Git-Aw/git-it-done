@@ -1,0 +1,142 @@
+-- Git-Inside database schema (MySQL 8)
+CREATE DATABASE IF NOT EXISTS git_inside CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE git_inside;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  full_name VARCHAR(120) NOT NULL,
+  email VARCHAR(160) NOT NULL UNIQUE,
+  password_hash VARCHAR(100) NOT NULL,
+  role ENUM('tenant','landlord') NOT NULL DEFAULT 'tenant',
+  contact_number VARCHAR(20) NULL,
+  status ENUM('pending','active','archived') NOT NULL DEFAULT 'pending',
+  reset_token_hash VARCHAR(64) NULL,
+  reset_expires DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  room_number VARCHAR(20) NOT NULL UNIQUE,
+  description VARCHAR(255) NULL,
+  monthly_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+  capacity INT NOT NULL DEFAULT 1,
+  is_archived TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS leases (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id INT NOT NULL,
+  room_id INT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NULL,
+  monthly_rent DECIMAL(10,2) NOT NULL,
+  due_day TINYINT NOT NULL DEFAULT 5,
+  status ENUM('active','ended') NOT NULL DEFAULT 'active',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (tenant_id) REFERENCES users(id),
+  FOREIGN KEY (room_id) REFERENCES rooms(id)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  lease_id INT NOT NULL,
+  tenant_id INT NOT NULL,
+  period CHAR(7) NOT NULL,
+  due_date DATE NOT NULL,
+  amount_due DECIMAL(10,2) NOT NULL,
+  amount_paid DECIMAL(10,2) NOT NULL DEFAULT 0,
+  status ENUM('unpaid','pending_confirmation','paid') NOT NULL DEFAULT 'unpaid',
+  method VARCHAR(30) NULL,
+  proof_path VARCHAR(255) NULL,
+  paid_at DATETIME NULL,
+  remarks VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_lease_period (lease_id, period),
+  FOREIGN KEY (lease_id) REFERENCES leases(id),
+  FOREIGN KEY (tenant_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_reports (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tenant_id INT NOT NULL,
+  room_id INT NOT NULL,
+  category ENUM('plumbing','electrical','furniture','appliance','cleaning','other') NOT NULL DEFAULT 'other',
+  urgency ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+  description TEXT NOT NULL,
+  photo_path VARCHAR(255) NULL,
+  status ENUM('Pending','In Progress','Resolved') NOT NULL DEFAULT 'Pending',
+  remarks VARCHAR(500) NULL,
+  assigned_to VARCHAR(120) NULL,
+  resolved_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (tenant_id) REFERENCES users(id),
+  FOREIGN KEY (room_id) REFERENCES rooms(id)
+);
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  author_id INT NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  body TEXT NOT NULL,
+  pinned TINYINT(1) NOT NULL DEFAULT 0,
+  is_archived TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  type VARCHAR(40) NOT NULL,
+  message VARCHAR(255) NOT NULL,
+  ref_type VARCHAR(30) NULL,
+  ref_id INT NULL,
+  is_read TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS dorm_info (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  dorm_name VARCHAR(120) NULL,
+  address VARCHAR(255) NULL,
+  contact_number VARCHAR(40) NULL,
+  about TEXT NULL,
+  house_rules TEXT NULL,
+  requirements TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS visitor_inquiries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  contact_number VARCHAR(40) NOT NULL,
+  message TEXT NULL,
+  status ENUM('new','contacted') NOT NULL DEFAULT 'new',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_pending_actions (
+  id CHAR(36) PRIMARY KEY,
+  user_id INT NULL,
+  role ENUM('landlord','tenant','visitor') NOT NULL,
+  tool_name VARCHAR(60) NOT NULL,
+  input TEXT NOT NULL,
+  summary VARCHAR(500) NOT NULL,
+  status ENUM('pending','executed','cancelled','failed') NOT NULL DEFAULT 'pending',
+  result TEXT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

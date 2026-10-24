@@ -43,7 +43,8 @@ Backend and frontend are kept in separate folders, run independently, and never 
    `git config --global user.email "you@example.com"`
 
 **Backend**
-1. Start MySQL in XAMPP. Open phpMyAdmin, go to Import, and import `backend/database/schema.sql` (it creates the `git_inside` database and its tables).
+1. Start MySQL in XAMPP. Create the database and tables by importing `backend/database/schema.sql` (phpMyAdmin: Import tab), or from the `backend/` folder run:
+   `cmd /c "C:\xampp\mysql\bin\mysql.exe -u root < database\schema.sql"`
 2. Open the `backend/` folder and run `npm install`.
 3. Copy `.env.example` to `.env` and fill in your MySQL details (XAMPP default: user `root`, empty password), a long `JWT_SECRET`, and the `ANTHROPIC_API_KEY` for the AI feature. Never commit `.env`.
 4. Optional demo data (this wipes the tables): `npm run seed`
