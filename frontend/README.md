@@ -22,9 +22,15 @@ Default is `http://localhost:3000`. Use another address with:
 - Tenant dashboard: balance, next due date, room and lease, latest announcements
 - Landlord dashboard: collections, outstanding balance, occupancy rate, paid / awaiting / unpaid / overdue counts, rooms needing maintenance, month selector
 - Announcements list, notifications (unread badge, mark read, mark all read), profile
-- Responsive: side menu on wide screens (web/desktop), bottom bar on phones
+- Responsive: side menu on wide screens (web/desktop), bottom bar on phones (with a "More" menu)
 
-Coming in Part 2 (tenant features and AI chat) and Part 3 (landlord features and offline cache).
+## Part 2 (tenant features and AI chat)
+- Payments: billing statements, payment history, upload proof of payment (gallery or camera)
+- Maintenance: new report with category, urgency, description and photo; list with status
+- AI Dorm Manager chat for tenants and landlords, plus a visitor chat on the login screen ("Ask about the dorm").
+  The AI only proposes changes. They run only after you press Confirm on the card.
+
+Coming in Part 3 (landlord features and offline cache).
 
 ## Tests
 `flutter test`

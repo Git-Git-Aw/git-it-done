@@ -81,3 +81,19 @@ String statusLabel(String? status) {
 bool isValidEmail(String value) {
   return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim());
 }
+
+/// Removes simple Markdown marks (**bold**, # headings, - bullets) from the
+/// AI's replies, because the chat shows plain text.
+String plainText(String text) {
+  final cleaned = text.replaceAll('**', '').replaceAll('__', '').replaceAll('`', '');
+  return cleaned.split('\n').map((line) {
+    var result = line;
+    final heading = RegExp(r'^\s*#{1,6}\s+').firstMatch(result);
+    if (heading != null) result = result.substring(heading.end);
+    final bullet = RegExp(r'^(\s*)[-*]\s+').firstMatch(result);
+    if (bullet != null) {
+      result = '${bullet.group(1)}\u2022 ${result.substring(bullet.end)}';
+    }
+    return result;
+  }).join('\n');
+}

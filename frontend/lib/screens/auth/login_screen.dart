@@ -5,6 +5,7 @@ import '../../api/api_client.dart';
 import '../../app_services.dart';
 import '../../theme.dart';
 import '../../utils/format.dart';
+import '../chat/chat_screens.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
@@ -124,6 +125,14 @@ class _LoginScreenState extends State<LoginScreen> {
               MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
             ),
             child: const Text('New tenant? Create an account'),
+          ),
+          const SizedBox(height: 4),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const VisitorChatScreen()),
+            ),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Ask about the dorm'),
           ),
           if (kDebugMode) ...[
             const Divider(height: 32),

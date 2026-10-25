@@ -27,3 +27,16 @@ InputDecoration fieldDecoration(String label, {IconData? icon, Widget? suffix}) 
     border: const OutlineInputBorder(),
   );
 }
+
+/// App bar with the brand gradient, for screens opened on top of the app.
+PreferredSizeWidget brandAppBar(String title) {
+  return AppBar(
+    title: Text(title),
+    foregroundColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    scrolledUnderElevation: 0,
+    flexibleSpace: const DecoratedBox(
+      decoration: BoxDecoration(gradient: brandGradient),
+    ),
+  );
+}
