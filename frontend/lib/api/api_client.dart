@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config.dart';
 
@@ -69,6 +70,30 @@ class ApiClient {
           headers: _headers(json: true),
           body: jsonEncode(body ?? <String, dynamic>{}),
         ));
+  }
+
+  /// Sends a form with one file (for example a receipt or a repair photo).
+  Future<dynamic> postMultipart(
+    String path, {
+    Map<String, String> fields = const <String, String>{},
+    required String fileField,
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+  }) {
+    return _send(() async {
+      final request = http.MultipartRequest('POST', _uri(path, null));
+      request.headers.addAll(_headers());
+      request.fields.addAll(fields);
+      request.files.add(http.MultipartFile.fromBytes(
+        fileField,
+        bytes,
+        filename: filename,
+        contentType: MediaType.parse(contentType),
+      ));
+      final streamed = await _client.send(request);
+      return http.Response.fromStream(streamed);
+    });
   }
 
   Future<dynamic> _send(Future<http.Response> Function() request) async {

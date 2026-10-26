@@ -12,6 +12,16 @@ int _int(dynamic v) => v is num ? v.toInt() : (int.tryParse('${v ?? ''}') ?? 0);
 
 bool _bool(dynamic v) => v == true || v == 1;
 
+String? _optStr(dynamic v) => (v == null || v.toString().isEmpty) ? null : v.toString();
+
+String _billRoom(Map<String, dynamic> j) {
+  final lease = j['lease'];
+  if (lease is Map && lease['room'] is Map) {
+    return _str((lease['room'] as Map)['roomNumber']);
+  }
+  return '';
+}
+
 class AppUser {
   AppUser({
     required this.id,
@@ -104,6 +114,12 @@ class Bill {
     required this.balance,
     required this.status,
     required this.displayStatus,
+    this.method,
+    this.proofPath,
+    this.paidAt,
+    this.remarks,
+    this.roomNumber = '',
+    this.tenantName = '',
   });
 
   final int id;
@@ -117,6 +133,15 @@ class Bill {
   /// Same as status, but "overdue" when an unpaid bill is past its due date.
   final String displayStatus;
 
+  final String? method;
+
+  /// Server path of the uploaded receipt, for example "/uploads/123-abc.jpg".
+  final String? proofPath;
+  final String? paidAt;
+  final String? remarks;
+  final String roomNumber;
+  final String tenantName;
+
   factory Bill.fromJson(Map<String, dynamic> j) => Bill(
         id: _int(j['id']),
         period: _str(j['period']),
@@ -126,6 +151,12 @@ class Bill {
         balance: _num(j['balance']),
         status: _str(j['status']),
         displayStatus: _str(j['displayStatus'], _str(j['status'])),
+        method: _optStr(j['method']),
+        proofPath: _optStr(j['proofPath']),
+        paidAt: _optStr(j['paidAt']),
+        remarks: _optStr(j['remarks']),
+        roomNumber: _billRoom(j),
+        tenantName: j['tenant'] is Map ? _str(asMap(j['tenant'])['fullName']) : '',
       );
 }
 
@@ -310,4 +341,100 @@ class LandlordSummary {
           .toList(),
     );
   }
+}
+
+/// A full maintenance report (the dashboard only needs [MaintenanceBrief]).
+class MaintenanceReport {
+  MaintenanceReport({
+    required this.id,
+    required this.roomNumber,
+    required this.tenantName,
+    required this.category,
+    required this.urgency,
+    required this.status,
+    required this.description,
+    required this.createdAt,
+    this.photoPath,
+    this.remarks,
+    this.assignedTo,
+    this.resolvedAt,
+  });
+
+  final int id;
+  final String roomNumber;
+  final String tenantName;
+  final String category;
+  final String urgency;
+  final String status;
+  final String description;
+  final String createdAt;
+  final String? photoPath;
+  final String? remarks;
+  final String? assignedTo;
+  final String? resolvedAt;
+
+  factory MaintenanceReport.fromJson(Map<String, dynamic> j) => MaintenanceReport(
+        id: _int(j['id']),
+        roomNumber: j['room'] is Map ? _str(asMap(j['room'])['roomNumber']) : '',
+        tenantName: j['tenant'] is Map ? _str(asMap(j['tenant'])['fullName']) : '',
+        category: _str(j['category'], 'other'),
+        urgency: _str(j['urgency'], 'medium'),
+        status: _str(j['status'], 'Pending'),
+        description: _str(j['description']),
+        createdAt: _str(j['createdAt']),
+        photoPath: _optStr(j['photoPath']),
+        remarks: _optStr(j['remarks']),
+        assignedTo: _optStr(j['assignedTo']),
+        resolvedAt: _optStr(j['resolvedAt']),
+      );
+}
+
+/// A change the AI proposed. Nothing happens until the user confirms it.
+class PendingAction {
+  PendingAction({
+    required this.id,
+    required this.tool,
+    required this.summary,
+    required this.expiresAt,
+  });
+
+  final String id;
+  final String tool;
+  final String summary;
+  final String expiresAt;
+
+  factory PendingAction.fromJson(Map<String, dynamic> j) => PendingAction(
+        id: _str(j['id']),
+        tool: _str(j['tool']),
+        summary: _str(j['summary']),
+        expiresAt: _str(j['expiresAt']),
+      );
+}
+
+/// The answer from POST /api/chat.
+class ChatReply {
+  ChatReply({required this.reply, required this.pendingActions});
+
+  final String reply;
+  final List<PendingAction> pendingActions;
+
+  factory ChatReply.fromJson(Map<String, dynamic> j) => ChatReply(
+        reply: _str(j['reply']),
+        pendingActions:
+            asList(j['pendingActions']).map((e) => PendingAction.fromJson(asMap(e))).toList(),
+      );
+}
+
+/// The answer from confirming or cancelling a proposed action.
+class ActionOutcome {
+  ActionOutcome({required this.status, required this.message});
+
+  /// "executed" or "cancelled".
+  final String status;
+  final String message;
+
+  factory ActionOutcome.fromJson(Map<String, dynamic> j) => ActionOutcome(
+        status: _str(j['status']),
+        message: _str(j['message']),
+      );
 }

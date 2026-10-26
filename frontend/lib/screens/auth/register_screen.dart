@@ -58,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Create tenant account')),
+      appBar: brandAppBar('Create tenant account'),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
