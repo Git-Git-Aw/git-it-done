@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 7f4c05d0-f6f0-442b-86bf-cf84a2f07509
+
+localResources:
+  collections:
+    - ../backend/postman/Git-Inside.postman_collection.json

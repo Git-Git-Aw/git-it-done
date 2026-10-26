@@ -1,0 +1,349 @@
+import 'package:flutter/material.dart';
+
+import '../api/api_client.dart';
+import '../utils/format.dart';
+
+/// Text to show for any error.
+String errorText(Object error) {
+  if (error is ApiException) return error.message;
+  return 'Something went wrong. Please try again.';
+}
+
+void showSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Loads data once, shows a spinner or an error with Retry, then builds the page.
+/// `refresh` reloads the data without hiding the page.
+class AsyncView<T> extends StatefulWidget {
+  const AsyncView({super.key, required this.load, required this.builder});
+
+  final Future<T> Function() load;
+  final Widget Function(BuildContext context, T data, Future<void> Function() refresh) builder;
+
+  @override
+  State<AsyncView<T>> createState() => _AsyncViewState<T>();
+}
+
+class _AsyncViewState<T> extends State<AsyncView<T>> {
+  T? _data;
+  Object? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final result = await widget.load();
+      if (!mounted) return;
+      setState(() {
+        _data = result;
+        _error = null;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _retry() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await _fetch();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return ErrorView(message: errorText(_error!), onRetry: _retry);
+    }
+    return widget.builder(context, _data as T, _fetch);
+  }
+}
+
+class ErrorView extends StatelessWidget {
+  const ErrorView({super.key, required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48),
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A scrolling page with a title, a refresh button, and pull-to-refresh.
+class PageList extends StatelessWidget {
+  const PageList({
+    super.key,
+    required this.title,
+    required this.onRefresh,
+    required this.children,
+    this.actions = const <Widget>[],
+  });
+
+  final String title;
+  final Future<void> Function() onRefresh;
+  final List<Widget> children;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  ),
+                  ...actions,
+                  IconButton(
+                    tooltip: 'Refresh',
+                    onPressed: () {
+                      onRefresh();
+                    },
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...children,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SectionCard extends StatelessWidget {
+  const SectionCard({super.key, this.title, required this.child});
+
+  final String? title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null) ...[
+              Text(title!, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+            ],
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class InfoRow extends StatelessWidget {
+  const InfoRow(this.label, this.value, {super.key, this.child});
+
+  final String label;
+  final String value;
+
+  /// Shown instead of [value] when given (for example a [StatusChip]).
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(label, style: TextStyle(color: Theme.of(context).hintColor)),
+          ),
+          Expanded(
+            child: child == null
+                ? Text(value)
+                : Align(alignment: Alignment.centerLeft, child: child),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small coloured label for payment, maintenance, and urgency values.
+class StatusChip extends StatelessWidget {
+  const StatusChip(this.status, {super.key, this.label});
+
+  final String status;
+
+  /// Text to show instead of the default label for [status].
+  final String? label;
+
+  Color _color() {
+    switch (status) {
+      case 'paid':
+      case 'Resolved':
+      case 'low':
+      case 'contacted':
+        return Colors.green.shade700;
+      case 'overdue':
+      case 'high':
+        return Colors.red.shade700;
+      case 'unpaid':
+      case 'Pending':
+      case 'medium':
+        return Colors.orange.shade800;
+      case 'pending_confirmation':
+      case 'In Progress':
+        return Colors.blue.shade700;
+      default:
+        return Colors.grey.shade700;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _color();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label ?? statusLabel(status),
+        style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
+      ),
+    );
+  }
+}
+
+/// A number with a label, used on the dashboards.
+class MetricCard extends StatelessWidget {
+  const MetricCard({super.key, required this.label, required this.value, this.color, this.footnote});
+
+  final String label;
+  final String value;
+  final Color? color;
+  final String? footnote;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 260,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(color: Theme.of(context).hintColor)),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: color),
+              ),
+              if (footnote != null) ...[
+                const SizedBox(height: 4),
+                Text(footnote!, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A page with a title and no refresh button (for static content).
+class PlainPage extends StatelessWidget {
+  const PlainPage({super.key, required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when a list has nothing in it yet.
+class EmptyState extends StatelessWidget {
+  const EmptyState({super.key, required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Icon(icon, size: 48, color: Theme.of(context).hintColor),
+          const SizedBox(height: 12),
+          Text(message, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
