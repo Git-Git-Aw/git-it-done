@@ -229,6 +229,7 @@ class StatusChip extends StatelessWidget {
       case 'Resolved':
       case 'low':
       case 'contacted':
+      case 'vacant':
         return Colors.green.shade700;
       case 'overdue':
       case 'high':
@@ -236,9 +237,12 @@ class StatusChip extends StatelessWidget {
       case 'unpaid':
       case 'Pending':
       case 'medium':
+      case 'full':
         return Colors.orange.shade800;
       case 'pending_confirmation':
       case 'In Progress':
+      case 'occupied':
+      case 'new':
         return Colors.blue.shade700;
       default:
         return Colors.grey.shade700;
@@ -344,6 +348,77 @@ class EmptyState extends StatelessWidget {
           Text(message, textAlign: TextAlign.center),
         ],
       ),
+    );
+  }
+}
+
+/// "< November 2026 >" with arrows, for pages that show one month at a time.
+class MonthBar extends StatelessWidget {
+  const MonthBar({super.key, required this.period, required this.onChanged});
+
+  /// "YYYY-MM"
+  final String period;
+  final ValueChanged<String> onChanged;
+
+  void _shift(int months) {
+    final year = int.parse(period.substring(0, 4));
+    final month = int.parse(period.substring(5, 7));
+    onChanged(periodOf(DateTime(year, month + months)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'Previous month',
+          onPressed: () => _shift(-1),
+          icon: const Icon(Icons.chevron_left),
+        ),
+        Expanded(
+          child: Text(
+            monthLabel(period),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Next month',
+          onPressed: () => _shift(1),
+          icon: const Icon(Icons.chevron_right),
+        ),
+      ],
+    );
+  }
+}
+
+/// A row of choice chips used to filter a list.
+class FilterChips extends StatelessWidget {
+  const FilterChips({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  /// value -> label
+  final Map<String, String> options;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        for (final entry in options.entries)
+          ChoiceChip(
+            label: Text(entry.value),
+            selected: selected == entry.key,
+            onSelected: (_) => onSelected(entry.key),
+          ),
+      ],
     );
   }
 }

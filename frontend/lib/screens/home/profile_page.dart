@@ -7,24 +7,51 @@ import '../../models/models.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
 
-/// Account details, change password, and log out.
-class ProfilePage extends StatelessWidget {
+/// Account details, change password, offline data, and log out.
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key, required this.user});
 
   final AppUser user;
 
-  Future<void> _changePassword(BuildContext context) async {
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  bool _syncing = false;
+
+  Future<void> _changePassword() async {
     final message = await showDialog<String>(
       context: context,
       builder: (_) => const _ChangePasswordDialog(),
     );
-    if (message != null && context.mounted) {
+    if (message != null && mounted) {
       showSnack(context, message);
     }
   }
 
+  Future<void> _syncNow() async {
+    final sync = AppServices.sync;
+    if (sync == null) return;
+    setState(() => _syncing = true);
+    String message;
+    try {
+      final result = await sync.syncNow(isLandlord: widget.user.isLandlord);
+      message = result.changed == 0
+          ? 'Everything is up to date.'
+          : 'Synced. ${result.changed} record(s) updated from the server.';
+    } catch (e) {
+      message = errorText(e);
+    }
+    if (!mounted) return;
+    setState(() => _syncing = false);
+    showSnack(context, message);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = widget.user;
+    final sync = AppServices.sync;
     return PlainPage(
       title: 'My profile',
       children: [
@@ -45,10 +72,34 @@ class ProfilePage extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: () => _changePassword(context),
+              onPressed: _changePassword,
               icon: const Icon(Icons.lock_reset),
               label: const Text('Change password'),
             ),
+          ),
+        ),
+        SectionCard(
+          title: 'Offline data',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InfoRow(
+                'Last synced',
+                sync?.lastSyncText() ?? 'Not available on this device',
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: (sync == null || _syncing) ? null : _syncNow,
+                icon: _syncing
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                label: const Text('Sync now'),
+              ),
+            ],
           ),
         ),
         SectionCard(

@@ -97,3 +97,13 @@ String plainText(String text) {
     return result;
   }).join('\n');
 }
+
+/// 3500.0 -> "3500", 3500.5 -> "3500.5" (for pre-filling number fields)
+String plainNumber(double value) {
+  return value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toString();
+}
+
+/// True for "2026-11".
+bool isPeriodText(String value) {
+  return RegExp(r'^\d{4}-(0[1-9]|1[0-2])$').hasMatch(value);
+}
