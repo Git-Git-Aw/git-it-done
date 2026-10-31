@@ -62,23 +62,27 @@ class _LandlordDashboardPageState extends State<LandlordDashboardPage> {
               children: [
                 MetricCard(
                   label: 'Total collections',
+                  icon: Icons.payments_outlined,
                   value: peso(s.totalCollections),
                   color: Colors.green.shade700,
                   footnote: 'Received for ${monthLabel(s.period)}',
                 ),
                 MetricCard(
                   label: 'Outstanding balance',
+                  icon: Icons.account_balance_wallet_outlined,
                   value: peso(s.outstandingBalance),
                   color: s.outstandingBalance > 0 ? Colors.red.shade700 : null,
                   footnote: 'All unpaid bills so far',
                 ),
                 MetricCard(
                   label: 'Occupancy rate',
+                  icon: Icons.meeting_room_outlined,
                   value: '${s.occupancyRate}%',
                   footnote: '${s.occupiedRooms} of ${s.totalRooms} rooms occupied, ${s.vacantRooms} vacant',
                 ),
                 MetricCard(
                   label: 'Open maintenance',
+                  icon: Icons.build_outlined,
                   value: '${s.openMaintenance}',
                   color: s.openMaintenance > 0 ? Colors.orange.shade800 : null,
                   footnote: s.roomsNeedingMaintenance.isEmpty
@@ -99,22 +103,26 @@ class _LandlordDashboardPageState extends State<LandlordDashboardPage> {
               children: [
                 MetricCard(
                   label: 'Paid',
+                  icon: Icons.check_circle_outline,
                   value: '${s.paid}',
                   color: Colors.green.shade700,
                 ),
                 MetricCard(
                   label: 'Awaiting confirmation',
+                  icon: Icons.hourglass_top,
                   value: '${s.pendingConfirmation}',
                   color: Colors.blue.shade700,
                   footnote: 'Proof uploaded, needs your check',
                 ),
                 MetricCard(
                   label: 'Unpaid',
+                  icon: Icons.receipt_long_outlined,
                   value: '${s.unpaid}',
                   color: Colors.orange.shade800,
                 ),
                 MetricCard(
                   label: 'Overdue',
+                  icon: Icons.warning_amber_rounded,
                   value: '${s.overdue}',
                   color: s.overdue > 0 ? Colors.red.shade700 : null,
                   footnote: 'Past the due date',

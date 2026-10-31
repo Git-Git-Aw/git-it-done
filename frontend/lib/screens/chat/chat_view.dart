@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../app_services.dart';
 import '../../models/models.dart';
+import '../../theme.dart';
 import '../../utils/format.dart';
 
 /// Chat with the AI Dorm Manager. The same widget is used for the three modes:
@@ -343,7 +344,6 @@ class _Bubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
@@ -352,12 +352,20 @@ class _Bubble extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: mine ? scheme.primary : scheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            gradient: mine ? brandGradient : null,
+            color: mine ? null : Colors.white,
+            border: mine ? null : Border.all(color: const Color(0xFFEDE4F7)),
+            boxShadow: softShadow,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(mine ? 18 : 4),
+              bottomRight: Radius.circular(mine ? 4 : 18),
+            ),
           ),
           child: SelectableText(
             text,
-            style: TextStyle(color: mine ? scheme.onPrimary : scheme.onSecondaryContainer),
+            style: TextStyle(color: mine ? Colors.white : Colors.black87),
           ),
         ),
       ),
@@ -377,7 +385,9 @@ class _TypingBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: scheme.secondaryContainer,
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFEDE4F7)),
+          boxShadow: softShadow,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
