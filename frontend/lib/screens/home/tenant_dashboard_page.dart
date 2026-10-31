@@ -28,26 +28,23 @@ class TenantDashboardPage extends StatelessWidget {
           title: 'Hi, ${firstName(user.fullName)}',
           onRefresh: refresh,
           children: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                MetricCard(
-                  label: 'Current balance',
-                  value: peso(dash.balance),
-                  color: dash.balance > 0 ? Colors.red.shade700 : Colors.green.shade700,
-                  footnote: dash.balance > 0
-                      ? 'Total of your unpaid bills'
-                      : 'You are all paid up',
-                ),
-                MetricCard(
-                  label: 'Next due date',
-                  value: due == null ? 'None' : formatDate(due.dueDate),
-                  footnote: due == null
-                      ? 'No bills waiting'
-                      : '${monthLabel(due.period)} bill: ${peso(due.balance)}',
-                ),
-              ],
+            HeroCard(
+              label: 'Current balance',
+              value: peso(dash.balance),
+              footnote: dash.balance > 0
+                  ? 'Total of your unpaid bills'
+                  : 'You are all paid up',
+              icon: dash.balance > 0
+                  ? Icons.account_balance_wallet_outlined
+                  : Icons.check_circle_outline,
+            ),
+            MetricCard(
+              label: 'Next due date',
+              icon: Icons.event_outlined,
+              value: due == null ? 'None' : formatDate(due.dueDate),
+              footnote: due == null
+                  ? 'No bills waiting'
+                  : '${monthLabel(due.period)} bill: ${peso(due.balance)}',
             ),
             const SizedBox(height: 12),
             SectionCard(

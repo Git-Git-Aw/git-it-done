@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../theme.dart';
 import '../utils/format.dart';
 
 /// Text to show for any error.
@@ -134,7 +135,13 @@ class PageList extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                    child: Text(
+                      title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700, color: brandDeep),
+                    ),
                   ),
                   ...actions,
                   IconButton(
@@ -164,20 +171,40 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (title != null) ...[
-              Text(title!, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-            ],
-            child,
+      padding: const EdgeInsets.all(16),
+      decoration: cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title != null) ...[
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    gradient: brandGradient,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title!,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
           ],
-        ),
+          child,
+        ],
       ),
     );
   }
@@ -268,37 +295,124 @@ class StatusChip extends StatelessWidget {
 
 /// A number with a label, used on the dashboards.
 class MetricCard extends StatelessWidget {
-  const MetricCard({super.key, required this.label, required this.value, this.color, this.footnote});
+  const MetricCard({
+    super.key,
+    required this.label,
+    required this.value,
+    this.color,
+    this.footnote,
+    this.icon,
+  });
 
   final String label;
   final String value;
   final Color? color;
   final String? footnote;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final accent = color ?? brandDeep;
+    final theme = Theme.of(context);
     return SizedBox(
       width: 260,
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(color: Theme.of(context).hintColor)),
-              const SizedBox(height: 6),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: color),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: cardDecoration(),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null) ...[
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accent, size: 22),
               ),
-              if (footnote != null) ...[
-                const SizedBox(height: 4),
-                Text(footnote!, style: Theme.of(context).textTheme.bodySmall),
-              ],
+              const SizedBox(width: 12),
             ],
-          ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(color: theme.hintColor)),
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (footnote != null) ...[
+                    const SizedBox(height: 4),
+                    Text(footnote!, style: theme.textTheme.bodySmall),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// A big card with the brand gradient for the one number that matters most.
+class HeroCard extends StatelessWidget {
+  const HeroCard({
+    super.key,
+    required this.label,
+    required this.value,
+    this.footnote,
+    this.icon = Icons.account_balance_wallet_outlined,
+  });
+
+  final String label;
+  final String value;
+  final String? footnote;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: brandGradient,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: softShadow,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (footnote != null) ...[
+                  const SizedBox(height: 6),
+                  Text(footnote!, style: const TextStyle(color: Colors.white70)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Icon(icon, size: 44, color: Colors.white54),
+        ],
       ),
     );
   }
@@ -340,11 +454,19 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: Theme.of(context).hintColor),
-          const SizedBox(height: 12),
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              color: brandPurple.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 40, color: brandDeep),
+          ),
+          const SizedBox(height: 14),
           Text(message, textAlign: TextAlign.center),
         ],
       ),

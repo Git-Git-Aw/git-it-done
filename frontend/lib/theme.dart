@@ -11,6 +11,21 @@ const LinearGradient brandGradient = LinearGradient(
   colors: [brandDeep, brandPurple, brandPink],
 );
 
+/// Soft purple shadow shared by cards.
+const List<BoxShadow> softShadow = [
+  BoxShadow(color: Color(0x146D28D9), blurRadius: 14, offset: Offset(0, 4)),
+];
+
+/// White rounded card look used across the app.
+BoxDecoration cardDecoration({Color color = Colors.white}) {
+  return BoxDecoration(
+    color: color,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: const Color(0xFFEDE4F7)),
+    boxShadow: softShadow,
+  );
+}
+
 ThemeData buildTheme() {
   return ThemeData(
     useMaterial3: true,
@@ -24,7 +39,7 @@ InputDecoration fieldDecoration(String label, {IconData? icon, Widget? suffix}) 
     labelText: label,
     prefixIcon: icon == null ? null : Icon(icon),
     suffixIcon: suffix,
-    border: const OutlineInputBorder(),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
   );
 }
 
