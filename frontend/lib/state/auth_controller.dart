@@ -1,15 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../models/models.dart';
 
-/// Keeps track of who is logged in. The token is saved on the device so a page
-/// refresh does not log the user out.
+/// Keeps track of who is logged in. The token and the user are saved on the
+/// device so a page refresh (or a start without internet) does not log the
+/// user out.
 class AuthController extends ChangeNotifier {
   AuthController(this._api, this._prefs);
 
   static const String _tokenKey = 'auth_token';
+  static const String _userKey = 'auth_user';
 
   final ApiClient _api;
   final SharedPreferences _prefs;
@@ -22,15 +26,43 @@ class AuthController extends ChangeNotifier {
   /// A message for the login screen, for example "Your session has expired".
   String? notice;
 
+  void _setUser(AppUser? value) {
+    user = value;
+    // Saved server answers are kept per account.
+    _api.cacheScope = value == null ? null : 'u${value.id}';
+  }
+
+  Future<void> _saveUser(AppUser value) async {
+    await _prefs.setString(_userKey, jsonEncode(value.toJson()));
+  }
+
+  AppUser? _savedUser() {
+    final raw = _prefs.getString(_userKey);
+    if (raw == null) return null;
+    try {
+      return AppUser.fromJson(asMap(jsonDecode(raw)));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> restore() async {
     final saved = _prefs.getString(_tokenKey);
     if (saved != null) {
       _api.token = saved;
       try {
-        final data = await _api.get('/api/auth/me');
-        user = AppUser.fromJson(asMap(data['user']));
-      } on ApiException {
-        await _clear();
+        final data = await _api.get('/api/auth/me', cached: false);
+        final fresh = AppUser.fromJson(asMap(data['user']));
+        _setUser(fresh);
+        await _saveUser(fresh);
+      } on ApiException catch (e) {
+        final offlineUser = _savedUser();
+        if (e.statusCode == null && offlineUser != null) {
+          // The server cannot be reached: stay logged in and use saved data.
+          _setUser(offlineUser);
+        } else {
+          await _clear();
+        }
       }
     }
     restoring = false;
@@ -43,9 +75,11 @@ class AuthController extends ChangeNotifier {
       'password': password,
     });
     final token = data['token'] as String;
+    final loggedIn = AppUser.fromJson(asMap(data['user']));
     _api.token = token;
     await _prefs.setString(_tokenKey, token);
-    user = AppUser.fromJson(asMap(data['user']));
+    await _saveUser(loggedIn);
+    _setUser(loggedIn);
     notice = null;
     notifyListeners();
   }
@@ -97,6 +131,15 @@ class AuthController extends ChangeNotifier {
     } on ApiException {
       // The token is only discarded on this device anyway.
     }
+    // Do not leave this person's saved data on a shared computer.
+    final scope = _api.cacheScope;
+    if (scope != null) {
+      try {
+        await _api.cache?.clearScope(scope);
+      } catch (_) {
+        // Nothing more to do if the saved data cannot be removed.
+      }
+    }
     await _clear();
     notice = null;
     notifyListeners();
@@ -107,14 +150,16 @@ class AuthController extends ChangeNotifier {
     if (user == null) return;
     notice = 'Your session has expired. Please log in again.';
     _api.token = null;
-    user = null;
+    _setUser(null);
     _prefs.remove(_tokenKey);
+    _prefs.remove(_userKey);
     notifyListeners();
   }
 
   Future<void> _clear() async {
     _api.token = null;
-    user = null;
+    _setUser(null);
     await _prefs.remove(_tokenKey);
+    await _prefs.remove(_userKey);
   }
 }

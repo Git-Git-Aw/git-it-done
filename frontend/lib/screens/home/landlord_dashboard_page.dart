@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../api/api_client.dart';
 import '../../app_services.dart';
 import '../../models/models.dart';
 import '../../utils/format.dart';
@@ -24,33 +26,10 @@ class _LandlordDashboardPageState extends State<LandlordDashboardPage> {
     return LandlordSummary.fromJson(asMap(data));
   }
 
-  void _shift(int months) {
-    final year = int.parse(_period.substring(0, 4));
-    final month = int.parse(_period.substring(5, 7));
-    setState(() => _period = periodOf(DateTime(year, month + months)));
-  }
-
-  Widget _monthBar() {
-    return Row(
-      children: [
-        IconButton(
-          tooltip: 'Previous month',
-          onPressed: () => _shift(-1),
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: Text(
-            monthLabel(_period),
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        IconButton(
-          tooltip: 'Next month',
-          onPressed: () => _shift(1),
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
+  Future<void> _showSummary() {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => _SummaryDialog(period: _period),
     );
   }
 
@@ -64,8 +43,19 @@ class _LandlordDashboardPageState extends State<LandlordDashboardPage> {
           title: 'Dashboard',
           onRefresh: refresh,
           children: [
-            _monthBar(),
-            const SizedBox(height: 8),
+            MonthBar(
+              period: _period,
+              onChanged: (value) => setState(() => _period = value),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: _showSummary,
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Generate AI summary'),
+              ),
+            ),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -187,6 +177,85 @@ class _ReportTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Asks the AI Dorm Manager for the monthly summary and shows the answer.
+class _SummaryDialog extends StatefulWidget {
+  const _SummaryDialog({required this.period});
+
+  final String period;
+
+  @override
+  State<_SummaryDialog> createState() => _SummaryDialogState();
+}
+
+class _SummaryDialogState extends State<_SummaryDialog> {
+  String? _text;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _generate();
+  }
+
+  Future<void> _generate() async {
+    try {
+      final data = await AppServices.api.post(
+        '/api/chat/summary',
+        body: {'period': widget.period},
+      );
+      final reply = ChatReply.fromJson(asMap(data));
+      if (!mounted) return;
+      setState(() => _text = plainText(reply.reply));
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Something went wrong. Please try again.');
+    }
+  }
+
+  Future<void> _copy() async {
+    final text = _text;
+    if (text == null) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (mounted) showSnack(context, 'Summary copied.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _text;
+    final error = _error;
+    Widget content;
+    if (error != null) {
+      content = Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error));
+    } else if (text == null) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else {
+      content = SingleChildScrollView(child: SelectableText(text));
+    }
+    return AlertDialog(
+      title: Text('AI summary: ${monthLabel(widget.period)}'),
+      content: SizedBox(width: 480, child: content),
+      actions: [
+        if (text != null)
+          TextButton.icon(
+            onPressed: _copy,
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

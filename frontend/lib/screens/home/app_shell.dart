@@ -3,7 +3,15 @@ import 'package:flutter/material.dart';
 import '../../app_services.dart';
 import '../../models/models.dart';
 import '../../theme.dart';
+import '../../utils/format.dart';
 import '../chat/chat_screens.dart';
+import '../landlord/dorm_info_page.dart';
+import '../landlord/inquiries_page.dart';
+import '../landlord/landlord_maintenance_page.dart';
+import '../landlord/landlord_payments_page.dart';
+import '../landlord/reports_page.dart';
+import '../landlord/rooms_page.dart';
+import '../landlord/tenants_page.dart';
 import '../maintenance/tenant_maintenance_page.dart';
 import '../payments/tenant_payments_page.dart';
 import 'announcements_page.dart';
@@ -91,7 +99,55 @@ class _AppShellState extends State<AppShell> {
     );
 
     if (user.isLandlord) {
-      return [dashboard, aiManager, announcements, notifications, profile];
+      return [
+        dashboard,
+        _NavItem(
+          label: 'Payments',
+          icon: Icons.payments_outlined,
+          selectedIcon: Icons.payments,
+          builder: () => const LandlordPaymentsPage(),
+        ),
+        _NavItem(
+          label: 'Maintenance',
+          icon: Icons.build_outlined,
+          selectedIcon: Icons.build,
+          builder: () => const LandlordMaintenancePage(),
+        ),
+        aiManager,
+        _NavItem(
+          label: 'Rooms',
+          icon: Icons.meeting_room_outlined,
+          selectedIcon: Icons.meeting_room,
+          builder: () => const RoomsPage(),
+        ),
+        _NavItem(
+          label: 'Tenants',
+          icon: Icons.people_outline,
+          selectedIcon: Icons.people,
+          builder: () => const TenantsPage(),
+        ),
+        announcements,
+        _NavItem(
+          label: 'Inquiries',
+          icon: Icons.question_answer_outlined,
+          selectedIcon: Icons.question_answer,
+          builder: () => const InquiriesPage(),
+        ),
+        _NavItem(
+          label: 'Reports',
+          icon: Icons.assessment_outlined,
+          selectedIcon: Icons.assessment,
+          builder: () => const ReportsPage(),
+        ),
+        _NavItem(
+          label: 'Dorm info',
+          icon: Icons.apartment_outlined,
+          selectedIcon: Icons.apartment,
+          builder: () => const DormInfoPage(),
+        ),
+        notifications,
+        profile,
+      ];
     }
     return [
       dashboard,
@@ -118,6 +174,8 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     AppServices.refreshUnread();
+    // Quietly refreshes the copy saved on this device.
+    AppServices.backgroundSync(widget.user);
   }
 
   void _select(int index) {
@@ -180,6 +238,40 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  /// Shown above the page while saved data is displayed because the server
+  /// cannot be reached.
+  Widget _offlineBanner() {
+    return ValueListenableBuilder<DateTime?>(
+      valueListenable: AppServices.api.offlineSince,
+      builder: (context, since, _) {
+        if (since == null) return const SizedBox.shrink();
+        return Material(
+          color: Colors.amber.shade100,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off, size: 20, color: Colors.orange.shade900),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'You are offline. Showing data saved on this device '
+                    '(last updated ${formatDateTime(since.toIso8601String())}).',
+                    style: TextStyle(color: Colors.orange.shade900),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _visit++),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   PreferredSizeWidget _buildAppBar(bool wide) {
     final user = widget.user;
     final role = user.isLandlord ? 'Landlord' : 'Tenant';
@@ -227,7 +319,12 @@ class _AppShellState extends State<AppShell> {
       final barIndex = _index < _primaryCount ? _index : _primaryCount;
       return Scaffold(
         appBar: _buildAppBar(false),
-        body: page,
+        body: Column(
+          children: [
+            _offlineBanner(),
+            Expanded(child: page),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: barIndex,
           onDestinationSelected: (i) {
@@ -283,7 +380,14 @@ class _AppShellState extends State<AppShell> {
             ),
           ),
           const VerticalDivider(width: 1),
-          Expanded(child: page),
+          Expanded(
+            child: Column(
+              children: [
+                _offlineBanner(),
+                Expanded(child: page),
+              ],
+            ),
+          ),
         ],
       ),
     );

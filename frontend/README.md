@@ -30,7 +30,19 @@ Default is `http://localhost:3000`. Use another address with:
 - AI Dorm Manager chat for tenants and landlords, plus a visitor chat on the login screen ("Ask about the dorm").
   The AI only proposes changes. They run only after you press Confirm on the card.
 
-Coming in Part 3 (landlord features and offline cache).
+## Part 3 (landlord features and offline cache)
+Landlord tabs: Dashboard (with "Generate AI summary"), Payments, Maintenance, AI Manager, Rooms, Tenants, Announcements, Inquiries, Reports, Dorm info, Notifications, Profile.
+- Payments: month and status filters, generate bills, record cash/other payments, confirm or reject uploaded receipts
+- Maintenance: filter by room and status, update status, assignee and remarks
+- Rooms and tenants: add, edit, archive, restore, approve, assign a room, edit or end a lease (nothing is hard deleted)
+- Announcements: post, edit, pin, archive, restore, show archived
+- Inquiries from the visitor chat, dorm information, monthly report with CSV export (a download on web; copied to the clipboard on Windows and Android)
+
+### Offline cache (Hive)
+- Every successful GET answer is saved on the device in one Hive box (`hive_ce` and `hive_ce_flutter`, the maintained fork of Hive). It is kept per account and removed on logout.
+- When the server cannot be reached, screens show the saved copy and a banner says "You are offline" with a Retry button. Changes (POST, PUT, PATCH) are never saved offline: the app says "Your change was NOT saved".
+- After login the app asks `GET /api/sync?since=...` and refreshes the saved lists. Profile > Offline data shows the last sync and has a "Sync now" button.
+- The login token and user stay in `shared_preferences`, not in Hive.
 
 ## Tests
 `flutter test`

@@ -42,6 +42,15 @@ class AppUser {
   bool get isLandlord => role == 'landlord';
   bool get isTenant => role == 'tenant';
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'fullName': fullName,
+        'email': email,
+        'role': role,
+        'status': status,
+        'contactNumber': contactNumber,
+      };
+
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
         id: _int(j['id']),
         fullName: _str(j['fullName']),
@@ -59,6 +68,10 @@ class Room {
     required this.description,
     required this.monthlyRate,
     required this.capacity,
+    this.isArchived = false,
+    this.occupants = 0,
+    this.occupancyStatus = '',
+    this.occupantNames = const <String>[],
   });
 
   final int id;
@@ -66,6 +79,14 @@ class Room {
   final String description;
   final double monthlyRate;
   final int capacity;
+  final bool isArchived;
+
+  /// How many tenants have an active lease in this room (landlord rooms list).
+  final int occupants;
+
+  /// vacant, occupied, full, or archived (landlord rooms list).
+  final String occupancyStatus;
+  final List<String> occupantNames;
 
   factory Room.fromJson(Map<String, dynamic> j) => Room(
         id: _int(j['id']),
@@ -73,6 +94,13 @@ class Room {
         description: _str(j['description']),
         monthlyRate: _num(j['monthlyRate']),
         capacity: _int(j['capacity']),
+        isArchived: _bool(j['isArchived']),
+        occupants: _int(j['occupants']),
+        occupancyStatus: _str(j['occupancyStatus']),
+        occupantNames: asList(j['leases'])
+            .map((l) => l is Map && l['tenant'] is Map ? _str((l['tenant'] as Map)['fullName']) : '')
+            .where((name) => name.isNotEmpty)
+            .toList(),
       );
 }
 
@@ -168,6 +196,7 @@ class Announcement {
     required this.pinned,
     required this.createdAt,
     required this.authorName,
+    this.isArchived = false,
   });
 
   final int id;
@@ -176,6 +205,7 @@ class Announcement {
   final bool pinned;
   final String createdAt;
   final String authorName;
+  final bool isArchived;
 
   factory Announcement.fromJson(Map<String, dynamic> j) => Announcement(
         id: _int(j['id']),
@@ -184,6 +214,7 @@ class Announcement {
         pinned: _bool(j['pinned']),
         createdAt: _str(j['createdAt']),
         authorName: j['author'] is Map ? _str(asMap(j['author'])['fullName']) : '',
+        isArchived: _bool(j['isArchived']),
       );
 }
 
@@ -437,4 +468,123 @@ class ActionOutcome {
         status: _str(j['status']),
         message: _str(j['message']),
       );
+}
+
+/// A tenant account as the landlord sees it (with the active lease, if any).
+class TenantRecord {
+  TenantRecord({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.status,
+    this.contactNumber,
+    this.lease,
+  });
+
+  final int id;
+  final String fullName;
+  final String email;
+
+  /// pending (waiting for approval), active, or archived.
+  final String status;
+  final String? contactNumber;
+  final Lease? lease;
+
+  factory TenantRecord.fromJson(Map<String, dynamic> j) {
+    final leases = asList(j['leases']);
+    return TenantRecord(
+      id: _int(j['id']),
+      fullName: _str(j['fullName']),
+      email: _str(j['email']),
+      status: _str(j['status']),
+      contactNumber: _optStr(j['contactNumber']),
+      lease: leases.isEmpty ? null : Lease.fromJson(asMap(leases.first)),
+    );
+  }
+}
+
+/// A message left by a visitor through the AI chatbox.
+class Inquiry {
+  Inquiry({
+    required this.id,
+    required this.name,
+    required this.contactNumber,
+    required this.status,
+    required this.createdAt,
+    this.message,
+  });
+
+  final int id;
+  final String name;
+  final String contactNumber;
+
+  /// new or contacted.
+  final String status;
+  final String createdAt;
+  final String? message;
+
+  factory Inquiry.fromJson(Map<String, dynamic> j) => Inquiry(
+        id: _int(j['id']),
+        name: _str(j['name']),
+        contactNumber: _str(j['contactNumber']),
+        status: _str(j['status'], 'new'),
+        createdAt: _str(j['createdAt']),
+        message: _optStr(j['message']),
+      );
+}
+
+/// The public information about the dormitory (the visitor chat reads it too).
+class DormInfo {
+  DormInfo({
+    required this.dormName,
+    required this.address,
+    required this.contactNumber,
+    required this.about,
+    required this.houseRules,
+    required this.requirements,
+  });
+
+  final String dormName;
+  final String address;
+  final String contactNumber;
+  final String about;
+  final String houseRules;
+  final String requirements;
+
+  factory DormInfo.fromJson(Map<String, dynamic> j) => DormInfo(
+        dormName: _str(j['dormName']),
+        address: _str(j['address']),
+        contactNumber: _str(j['contactNumber']),
+        about: _str(j['about']),
+        houseRules: _str(j['houseRules']),
+        requirements: _str(j['requirements']),
+      );
+}
+
+/// GET /api/reports/monthly (json): totals and one row per bill.
+class MonthlyReport {
+  MonthlyReport({
+    required this.month,
+    required this.billed,
+    required this.collected,
+    required this.outstanding,
+    required this.rows,
+  });
+
+  final String month;
+  final double billed;
+  final double collected;
+  final double outstanding;
+  final List<Bill> rows;
+
+  factory MonthlyReport.fromJson(Map<String, dynamic> j) {
+    final totals = asMap(j['totals'] ?? <String, dynamic>{});
+    return MonthlyReport(
+      month: _str(j['month']),
+      billed: _num(totals['billed']),
+      collected: _num(totals['collected']),
+      outstanding: _num(totals['outstanding']),
+      rows: asList(j['rows']).map((e) => Bill.fromJson(asMap(e))).toList(),
+    );
+  }
 }
