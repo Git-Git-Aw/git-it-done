@@ -18,7 +18,7 @@ The system runs on a local development server (localhost). Online payment gatewa
 - Frontend: Flutter (Dart), one codebase for mobile, web, and desktop
 - Backend: Node.js, Express, Sequelize (REST API with JWT and role-based access)
 - Database: MySQL (XAMPP)
-- AI: Claude API, called only from the backend
+- AI: a free OpenAI-compatible provider (NVIDIA NIM), called only from the backend
 
 ## Repository Structure
 - `backend/`: Node.js, Express, MySQL (API on http://localhost:3000)
@@ -46,7 +46,7 @@ Backend and frontend are kept in separate folders, run independently, and never 
 1. Start MySQL in XAMPP. Create the database and tables by importing `backend/database/schema.sql` (phpMyAdmin: Import tab), or from the `backend/` folder run:
    `cmd /c "C:\xampp\mysql\bin\mysql.exe -u root < database\schema.sql"`
 2. Open the `backend/` folder and run `npm install`.
-3. Copy `.env.example` to `.env` and fill in your MySQL details (XAMPP default: user `root`, empty password), a long `JWT_SECRET`, and the `ANTHROPIC_API_KEY` for the AI feature. Never commit `.env`.
+3. Copy `.env.example` to `.env` and fill in your MySQL details (XAMPP default: user `root`, empty password), a long `JWT_SECRET`, and the free AI provider settings (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) for the AI feature. See `backend/README.md` for details. Never commit `.env`.
 4. Optional demo data (this wipes the tables): `npm run seed`
 5. Run `npm run dev`, then open http://localhost:3000/api/health to check.
 
