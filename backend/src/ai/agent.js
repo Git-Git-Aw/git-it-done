@@ -3,33 +3,60 @@ const { buildSystemPrompt } = require('./prompts');
 const { AiPendingAction } = require('../models');
 const { httpError } = require('../utils/helpers');
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const MAX_STEPS = 6;
+const MAX_TOKENS = 2048; // reasoning models spend tokens on thinking, so keep some room
+const DEFAULT_TIMEOUT_MS = 45000;
 const ACTION_TTL_MS = 15 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NOT_SET_UP = 'The AI Dorm Manager is not set up yet. Add AI_BASE_URL, AI_API_KEY and AI_MODEL to backend/.env and restart the server.';
 
-const modelName = () => process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
+// --- provider settings (any OpenAI-compatible server: NVIDIA NIM, OpenRouter, Ollama, ...) ---
+const isLocalUrl = (url) => {
+  try { return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(new URL(url).hostname); } catch { return false; }
+};
 
-const callClaude = async (body) => {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw httpError(503, 'The AI Dorm Manager is not set up yet. Add ANTHROPIC_API_KEY to backend/.env and restart the server.');
+const timeoutMs = () => {
+  const n = Number(process.env.AI_TIMEOUT_MS);
+  return Number.isFinite(n) && n >= 1000 ? n : DEFAULT_TIMEOUT_MS;
+};
+
+// A key is required, except for a local server (Ollama) which does not use one
+const aiConfig = () => {
+  const baseUrl = (process.env.AI_BASE_URL || '').trim().replace(/\/+$/, '');
+  const apiKey = (process.env.AI_API_KEY || '').trim();
+  const model = (process.env.AI_MODEL || '').trim();
+  if (!baseUrl || !model || (!apiKey && !isLocalUrl(baseUrl))) throw httpError(503, NOT_SET_UP);
+  return { baseUrl, apiKey, model };
+};
+
+const callAI = async (cfg, body) => {
+  const headers = { 'content-type': 'application/json' };
+  if (cfg.apiKey) headers.authorization = `Bearer ${cfg.apiKey}`;
   let res;
   try {
-    res = await fetch(API_URL, {
+    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      headers,
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(45000),
+      signal: AbortSignal.timeout(timeoutMs()),
     });
-  } catch {
+  } catch (err) {
+    if (err && err.name === 'TimeoutError') throw httpError(502, 'The AI service took too long to answer. Please try again.');
     throw httpError(502, 'Could not reach the AI service. Check your internet connection.');
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.error('Claude API error', res.status, text.slice(0, 300));
-    throw httpError(502, res.status === 401 ? 'The AI API key is invalid.' : 'The AI service returned an error. Please try again.');
+    console.error('AI provider error', res.status, text.slice(0, 300)); // never log the key
+    if (res.status === 401 || res.status === 403) throw httpError(502, 'The AI API key is invalid or not allowed.');
+    if (res.status === 404) throw httpError(502, 'The AI model is not available for this key. Check AI_MODEL in backend/.env.');
+    if (res.status === 429) throw httpError(502, 'The AI service is busy right now (its free limit was reached). Please try again in a minute.');
+    throw httpError(502, 'The AI service returned an error. Please try again.');
   }
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    throw httpError(502, 'The AI service returned an unreadable answer. Please try again.');
+  }
 };
 
 // Messages come from the client, so keep only plain, short user/assistant text
@@ -43,18 +70,54 @@ const sanitizeMessages = (raw) => {
   return msgs;
 };
 
-const textOf = (blocks) => blocks.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-const echoBlocks = (blocks) => blocks.filter((b) => b.type === 'text' || b.type === 'tool_use')
-  .map((b) => (b.type === 'text' ? { type: 'text', text: b.text } : { type: 'tool_use', id: b.id, name: b.name, input: b.input || {} }));
+// --- reading the provider's answer ---
+const contentText = (content) => {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.map((p) => (typeof p === 'string' ? p : (p && typeof p.text === 'string' ? p.text : ''))).join('');
+  }
+  return '';
+};
+// Some reasoning models put their thinking inside <think> tags: never show it to the user
+const cleanText = (content) => contentText(content)
+  .replace(/<think>[\s\S]*?<\/think>/gi, '')
+  .replace(/<think>[\s\S]*$/i, '')
+  .trim();
+
+// Tool arguments normally arrive as a JSON string; some servers send an object. null = unusable.
+const parseArgs = (raw) => {
+  if (raw === undefined || raw === null) return {};
+  if (typeof raw === 'object') return Array.isArray(raw) ? null : raw;
+  if (typeof raw !== 'string') return null;
+  if (!raw.trim()) return {};
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeCalls = (message, step) => (Array.isArray(message.tool_calls) ? message.tool_calls : [])
+  .filter((c) => c && c.function && typeof c.function.name === 'string')
+  .map((c, i) => ({
+    id: typeof c.id === 'string' && c.id ? c.id : `call_${step}_${i}`,
+    name: c.function.name,
+    input: parseArgs(c.function.arguments),
+  }));
+
+const echoCall = (c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: JSON.stringify(c.input || {}) } });
 const isUserFacing = (err) => (err.status && err.status < 500) || err.name === 'SequelizeValidationError';
 
-const handleToolUse = async (block, ctx, pendingActions) => {
-  const result = (content, isError = false) => ({ type: 'tool_result', tool_use_id: block.id, content, ...(isError ? { is_error: true } : {}) });
-  const tool = getTool(block.name, ctx.role);
+// Tool results are DATA for the model, never instructions. Errors start with "ERROR:".
+const handleToolCall = async (call, ctx, pendingActions) => {
+  const result = (content, isError = false) => ({ role: 'tool', tool_call_id: call.id, content: isError ? `ERROR: ${content}` : content });
+  const tool = getTool(call.name, ctx.role);
   if (!tool) return result('That tool does not exist or is not allowed for this user.', true);
+  if (call.input === null) return result('The tool arguments were not valid JSON. Tell the user something went wrong, or try again with valid arguments.', true);
   try {
     if (tool.write) {
-      const input = tool.prepare(block.input || {});
+      const input = tool.prepare(call.input);
       const summary = String(await tool.describe(input)).slice(0, 500);
       const action = await AiPendingAction.create({
         userId: ctx.user ? ctx.user.id : null, role: ctx.role, toolName: tool.name,
@@ -63,33 +126,43 @@ const handleToolUse = async (block, ctx, pendingActions) => {
       pendingActions.push({ id: action.id, tool: tool.name, summary, expiresAt: action.expiresAt });
       return result('Proposed to the user. It is waiting for their confirmation and has NOT been done yet. Tell the user to review and confirm it.');
     }
-    const out = await tool.run(ctx, block.input || {});
+    const out = await tool.run(ctx, call.input);
     return result(JSON.stringify(out === undefined ? null : out).slice(0, 8000));
   } catch (err) {
     if (isUserFacing(err)) return result(err.message, true);
-    console.error(`AI tool "${block.name}" failed:`, err);
+    console.error(`AI tool "${call.name}" failed:`, err);
     return result('The tool failed. Tell the user something went wrong and to try again.', true);
   }
 };
 
 // Runs the tool-calling loop. Returns the reply text plus any actions waiting for the user's confirmation.
 const runAgent = async (ctx, messages) => {
-  const tools = toolsForRole(ctx.role).map(({ name, description, input_schema }) => ({ name, description, input_schema }));
-  const system = buildSystemPrompt(ctx);
-  const convo = messages.map((m) => ({ role: m.role, content: m.content }));
+  const cfg = aiConfig();
+  const tools = toolsForRole(ctx.role).map(({ name, description, input_schema }) => ({
+    type: 'function',
+    function: { name, description, parameters: input_schema },
+  }));
+  const convo = [
+    { role: 'system', content: buildSystemPrompt(ctx) },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  ];
   const pendingActions = [];
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const data = await callClaude({ model: modelName(), max_tokens: 1024, system, tools, messages: convo });
-    const blocks = Array.isArray(data.content) ? data.content : [];
-    if (data.stop_reason !== 'tool_use') {
-      const reply = textOf(blocks) || (pendingActions.length ? 'Please review and confirm the action below.' : 'Sorry, I could not come up with an answer. Please try again.');
+    const body = { model: cfg.model, max_tokens: MAX_TOKENS, messages: convo };
+    if (tools.length) body.tools = tools;
+    const data = await callAI(cfg, body);
+    const message = Array.isArray(data && data.choices) && data.choices[0] && data.choices[0].message;
+    if (!message) throw httpError(502, 'The AI service returned an unexpected answer. Please try again.');
+
+    const text = cleanText(message.content);
+    const calls = normalizeCalls(message, step);
+    if (!calls.length) {
+      const reply = text || (pendingActions.length ? 'Please review and confirm the action below.' : 'Sorry, I could not come up with an answer. Please try again.');
       return { reply, pendingActions };
     }
-    convo.push({ role: 'assistant', content: echoBlocks(blocks) });
-    const results = [];
-    for (const b of blocks.filter((x) => x.type === 'tool_use')) results.push(await handleToolUse(b, ctx, pendingActions));
-    convo.push({ role: 'user', content: results });
+    convo.push({ role: 'assistant', ...(text ? { content: text } : {}), tool_calls: calls.map(echoCall) });
+    for (const c of calls) convo.push(await handleToolCall(c, ctx, pendingActions));
   }
   return { reply: 'Sorry, I could not finish that request. Please try rephrasing it.', pendingActions };
 };

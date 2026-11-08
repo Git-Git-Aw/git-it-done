@@ -1,11 +1,13 @@
 // Logic tests for the AI Dorm Manager. No MySQL and no internet needed:
-// the database models and the Claude API are replaced with small fakes.
+// the database models and the AI provider (OpenAI-compatible API) are replaced with small fakes.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('module');
 const { randomUUID } = require('crypto');
 
-process.env.ANTHROPIC_API_KEY = 'test-key';
+process.env.AI_BASE_URL = 'https://ai.test/v1';
+process.env.AI_API_KEY = 'test-key';
+process.env.AI_MODEL = 'test-model';
 process.env.NODE_ENV = 'test';
 
 // --- fake third-party / models -------------------------------------------------
@@ -39,17 +41,26 @@ const fakeModels = {
 const modelsPath = require.resolve('../src/models');
 require.cache[modelsPath] = { id: modelsPath, filename: modelsPath, loaded: true, exports: fakeModels };
 
-// --- fake Claude API -----------------------------------------------------------
+// --- fake AI provider (OpenAI-compatible chat completions) ---------------------
 let sent = [];
 let queue = [];
+let requests = [];
 global.fetch = async (url, opts) => {
   sent.push(JSON.parse(opts.body));
+  requests.push({ url, headers: opts.headers });
   const next = queue.shift();
+  if (next && next.__throw) throw new Error('network down');
+  if (next && next.__status) return { ok: false, status: next.__status, json: async () => ({}), text: async () => 'provider said no' };
   return { ok: true, status: 200, json: async () => next, text: async () => '' };
 };
-const toolUse = (name, input, id = 'tu_1') => ({ stop_reason: 'tool_use', content: [{ type: 'tool_use', id, name, input }] });
-const say = (text) => ({ stop_reason: 'end_turn', content: [{ type: 'text', text }] });
-const reset = () => { sent = []; queue = []; db.pending = []; db.inquiries = []; db.notifications = []; };
+const toolUse = (name, input, id = 'call_1') => ({
+  choices: [{ finish_reason: 'tool_calls', message: { role: 'assistant', content: null, tool_calls: [{ id, type: 'function', function: { name, arguments: JSON.stringify(input) } }] } }],
+});
+const toolUseRaw = (name, rawArguments, id = 'call_1') => ({
+  choices: [{ finish_reason: 'tool_calls', message: { role: 'assistant', content: null, tool_calls: [{ id, type: 'function', function: { name, arguments: rawArguments } }] } }],
+});
+const say = (text) => ({ choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: text } }] });
+const reset = () => { sent = []; queue = []; requests = []; db.pending = []; db.inquiries = []; db.notifications = []; };
 
 const { runAgent, resolveAction, sanitizeMessages } = require('../src/ai/agent');
 const { toolsForRole, getTool } = require('../src/ai/tools');
@@ -109,11 +120,21 @@ test('visitor chat: tool result goes back to the model and only visitor tools ar
   assert.equal(out.reply, 'Room 202 is available at ₱3,000.');
   assert.equal(out.pendingActions.length, 0);
   assert.equal(sent.length, 2);
-  const offered = sent[0].tools.map((t) => t.name);
+  const offered = sent[0].tools.map((t) => t.function.name);
+  assert.ok(sent[0].tools.every((t) => t.type === 'function' && t.function.parameters), 'tools use the OpenAI function format');
+  assert.equal(requests[0].url, 'https://ai.test/v1/chat/completions');
+  assert.equal(requests[0].headers.authorization, 'Bearer test-key');
+  assert.equal(sent[0].model, 'test-model');
   assert.ok(offered.includes('get_available_rooms') && !offered.includes('list_payments'));
-  assert.match(sent[0].system, /visitor/i);
-  const result = sent[1].messages.at(-1).content[0];
-  assert.equal(result.type, 'tool_result');
+  assert.equal(sent[0].messages[0].role, 'system');
+  assert.match(sent[0].messages[0].content, /visitor/i);
+  const echoed = sent[1].messages.at(-2);
+  assert.equal(echoed.role, 'assistant');
+  assert.equal(echoed.tool_calls[0].function.name, 'get_available_rooms');
+  assert.equal(typeof echoed.tool_calls[0].function.arguments, 'string');
+  const result = sent[1].messages.at(-1);
+  assert.equal(result.role, 'tool');
+  assert.equal(result.tool_call_id, 'call_1');
   assert.match(result.content, /202/);
   assert.doesNotMatch(result.content, /"101"/, 'full room must not be listed as available');
 });
@@ -123,8 +144,9 @@ test('a tool the role does not have is refused, not executed', async () => {
   queue.push(toolUse('list_payments', {}), say('Sorry, I cannot do that.'));
   const out = await runAgent(visitor, ask('show everyone who owes money'));
   assert.equal(out.reply, 'Sorry, I cannot do that.');
-  const result = sent[1].messages.at(-1).content[0];
-  assert.equal(result.is_error, true);
+  const result = sent[1].messages.at(-1);
+  assert.equal(result.role, 'tool');
+  assert.match(result.content, /^ERROR:.*not allowed/);
 });
 
 test('visitor inquiry: nothing is saved until the visitor confirms', async () => {
@@ -161,7 +183,7 @@ test('an invalid phone number is rejected before any action is created', async (
   const out = await runAgent(visitor, ask('inquiry for Ben, abc'));
   assert.equal(out.pendingActions.length, 0);
   assert.equal(db.pending.length, 0);
-  assert.equal(sent[1].messages.at(-1).content[0].is_error, true);
+  assert.match(sent[1].messages.at(-1).content, /^ERROR:/);
 });
 
 test("someone else cannot confirm another user's action", async () => {
@@ -185,11 +207,76 @@ test('a malformed action id is a 404, not a crash', async () => {
   await assert.rejects(() => resolveAction('not-a-uuid', visitor, 'confirm'), (e) => e.status === 404);
 });
 
-test('missing API key gives a clear 503', async () => {
-  const key = process.env.ANTHROPIC_API_KEY;
-  delete process.env.ANTHROPIC_API_KEY;
-  await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 503 && /ANTHROPIC_API_KEY/.test(e.message));
-  process.env.ANTHROPIC_API_KEY = key;
+test('missing AI settings give a clear 503', async () => {
+  for (const name of ['AI_API_KEY', 'AI_BASE_URL', 'AI_MODEL']) {
+    const saved = process.env[name];
+    delete process.env[name];
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 503 && /AI_API_KEY/.test(e.message), `${name} missing`);
+    process.env[name] = saved;
+  }
+});
+
+test('a local server (Ollama) works without an API key', async () => {
+  reset();
+  const saved = { key: process.env.AI_API_KEY, url: process.env.AI_BASE_URL };
+  delete process.env.AI_API_KEY;
+  process.env.AI_BASE_URL = 'http://localhost:11434/v1/';
+  try {
+    queue.push(say('Hello!'));
+    const out = await runAgent(visitor, ask('hi'));
+    assert.equal(out.reply, 'Hello!');
+    assert.equal(requests[0].url, 'http://localhost:11434/v1/chat/completions');
+    assert.equal(requests[0].headers.authorization, undefined);
+  } finally {
+    process.env.AI_API_KEY = saved.key;
+    process.env.AI_BASE_URL = saved.url;
+  }
+});
+
+test('broken tool arguments become a tool error, not a crash', async () => {
+  reset();
+  queue.push(toolUseRaw('submit_inquiry', '{"name": "Maria", oops'), say('Sorry, something went wrong.'));
+  const out = await runAgent(visitor, ask('inquiry'));
+  assert.equal(out.reply, 'Sorry, something went wrong.');
+  assert.equal(out.pendingActions.length, 0);
+  assert.equal(db.pending.length, 0);
+  assert.match(sent[1].messages.at(-1).content, /^ERROR:.*valid JSON/);
+  assert.equal(sent[1].messages.at(-2).tool_calls[0].function.arguments, '{}', 'broken arguments are not echoed back');
+});
+
+test('provider failures become a 502 with a readable message', async () => {
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    reset();
+    queue.push({ __throw: true });
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 502 && /Could not reach/.test(e.message));
+    queue.push({ __status: 401 });
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 502 && /key/.test(e.message));
+    queue.push({ __status: 404 });
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 502 && /AI_MODEL/.test(e.message));
+    queue.push({ __status: 500 });
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 502);
+    queue.push({ choices: [] });
+    await assert.rejects(() => runAgent(visitor, ask('hi')), (e) => e.status === 502);
+  } finally {
+    console.error = quiet;
+  }
+});
+
+test('hidden <think> text is never shown to the user', async () => {
+  reset();
+  queue.push(say('<think>the user wants rooms</think>Room 202 is free.'));
+  const out = await runAgent(visitor, ask('rooms?'));
+  assert.equal(out.reply, 'Room 202 is free.');
+});
+
+test('the tool loop stops after 6 steps', async () => {
+  reset();
+  for (let i = 0; i < 10; i++) queue.push(toolUse('get_available_rooms', {}, `call_${i}`));
+  const out = await runAgent(visitor, ask('rooms?'));
+  assert.equal(sent.length, 6);
+  assert.match(out.reply, /could not finish/i);
 });
 
 test('rate limiter blocks after the limit and sets Retry-After', () => {
