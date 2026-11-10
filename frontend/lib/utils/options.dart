@@ -17,6 +17,21 @@ const List<String> maintenanceStatuses = ['Pending', 'In Progress', 'Resolved'];
 /// How a tenant paid (payments are recorded manually, with a receipt photo).
 const List<String> paymentMethods = ['Cash', 'GCash', 'Maya', 'Bank transfer', 'Other'];
 
+/// A simple icon for each way of paying (the real brand logos are not used).
+IconData paymentMethodIcon(String method) {
+  switch (method) {
+    case 'Cash':
+      return Icons.payments_outlined;
+    case 'GCash':
+    case 'Maya':
+      return Icons.phone_android_outlined;
+    case 'Bank transfer':
+      return Icons.account_balance_outlined;
+    default:
+      return Icons.more_horiz;
+  }
+}
+
 IconData categoryIcon(String category) {
   switch (category) {
     case 'plumbing':
@@ -33,3 +48,4 @@ IconData categoryIcon(String category) {
       return Icons.build_outlined;
   }
 }
+

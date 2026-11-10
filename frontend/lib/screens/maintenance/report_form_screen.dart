@@ -106,15 +106,17 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
                   const SizedBox(height: 20),
                   Text('How urgent is it?', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    segments: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
                       for (final level in urgencyLevels)
-                        ButtonSegment<String>(value: level, label: Text(titleCase(level))),
+                        ChoiceChip(
+                          label: Text(titleCase(level)),
+                          selected: _urgency == level,
+                          onSelected: _busy ? null : (_) => setState(() => _urgency = level),
+                        ),
                     ],
-                    selected: {_urgency},
-                    onSelectionChanged: _busy
-                        ? null
-                        : (selection) => setState(() => _urgency = selection.first),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -166,3 +168,4 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
     );
   }
 }
+

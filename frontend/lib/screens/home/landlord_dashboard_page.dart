@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../api/api_client.dart';
 import '../../app_services.dart';
+import '../../config.dart';
 import '../../models/models.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
@@ -214,6 +215,8 @@ class _SummaryDialogState extends State<_SummaryDialog> {
       final data = await AppServices.api.post(
         '/api/chat/summary',
         body: {'period': widget.period},
+        changesData: false,
+        timeout: AppConfig.aiRequestTimeout,
       );
       final reply = ChatReply.fromJson(asMap(data));
       if (!mounted) return;
@@ -267,3 +270,4 @@ class _SummaryDialogState extends State<_SummaryDialog> {
     );
   }
 }
+

@@ -6,6 +6,7 @@ import '../../config.dart';
 import '../../models/models.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
+import '../../widgets/form_dialog.dart';
 
 /// Account details, change password, offline data, and log out.
 class ProfilePage extends StatefulWidget {
@@ -108,7 +109,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 4),
         FilledButton.icon(
-          onPressed: () => AppServices.auth.logout(),
+          onPressed: () async {
+            final sure = await confirmDialog(
+              context,
+              title: 'Log out?',
+              message: 'You will need to log in again to use Git-Inside.',
+              confirmLabel: 'Log out',
+            );
+            if (sure) await AppServices.auth.logout();
+          },
           icon: const Icon(Icons.logout),
           label: const Text('Log out'),
         ),
@@ -228,3 +237,4 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     );
   }
 }
+
