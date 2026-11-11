@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../app_services.dart';
+import '../../config.dart';
 import '../../models/models.dart';
 import '../../theme.dart';
 import '../../utils/format.dart';
@@ -139,6 +140,8 @@ class _ChatViewState extends State<ChatView> {
       final data = await AppServices.api.post(
         '/api/chat',
         body: {'messages': _historyForApi()},
+        changesData: false,
+        timeout: AppConfig.aiRequestTimeout,
       );
       final reply = ChatReply.fromJson(asMap(data));
       if (!mounted) return;
@@ -535,3 +538,4 @@ class _ActionCard extends StatelessWidget {
     );
   }
 }
+

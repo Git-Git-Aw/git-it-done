@@ -238,6 +238,7 @@ class _ProofDialogState extends State<_ProofDialog> {
                 children: [
                   for (final method in paymentMethods)
                     ChoiceChip(
+                      avatar: Icon(paymentMethodIcon(method), size: 18),
                       label: Text(method),
                       selected: _method == method,
                       onSelected: _busy ? null : (_) => setState(() => _method = method),
@@ -286,3 +287,4 @@ class _ProofDialogState extends State<_ProofDialog> {
     );
   }
 }
+

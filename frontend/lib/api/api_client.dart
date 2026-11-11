@@ -122,14 +122,23 @@ class ApiClient {
     throw ApiException(_messageFrom(data, response.statusCode), statusCode: response.statusCode);
   }
 
-  Future<dynamic> post(String path, {Object? body}) {
+  /// [changesData] is true by default. Pass false for a request that only
+  /// asks a question (such as the AI chat), so an error message does not say
+  /// that a change was lost. [timeout] replaces the normal 20 seconds.
+  Future<dynamic> post(
+    String path, {
+    Object? body,
+    bool changesData = true,
+    Duration? timeout,
+  }) {
     return _send(
       () => _client.post(
         _uri(path, null),
         headers: _headers(json: true),
         body: jsonEncode(body ?? <String, dynamic>{}),
       ),
-      write: true,
+      write: changesData,
+      timeout: timeout,
     );
   }
 
@@ -186,10 +195,11 @@ class ApiClient {
   Future<http.Response> _perform(
     Future<http.Response> Function() request, {
     required bool write,
+    Duration? timeout,
   }) async {
     http.Response response;
     try {
-      response = await request().timeout(AppConfig.requestTimeout);
+      response = await request().timeout(timeout ?? AppConfig.requestTimeout);
     } on TimeoutException {
       throw ApiException(
         write
@@ -221,8 +231,9 @@ class ApiClient {
   Future<dynamic> _send(
     Future<http.Response> Function() request, {
     bool write = false,
+    Duration? timeout,
   }) async {
-    final response = await _perform(request, write: write);
+    final response = await _perform(request, write: write, timeout: timeout);
 
     dynamic data;
     final text = utf8.decode(response.bodyBytes, allowMalformed: true);
@@ -240,3 +251,4 @@ class ApiClient {
     throw ApiException(_messageFrom(data, response.statusCode), statusCode: response.statusCode);
   }
 }
+

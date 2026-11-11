@@ -90,35 +90,47 @@ class _ReportsPageState extends State<ReportsPage> {
                 message: 'No bills for this month yet. Generate bills on the Payments page first.',
               )
             else
-              SectionCard(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('Room')),
-                      DataColumn(label: Text('Tenant')),
-                      DataColumn(label: Text('Due date')),
-                      DataColumn(label: Text('Amount due'), numeric: true),
-                      DataColumn(label: Text('Paid'), numeric: true),
-                      DataColumn(label: Text('Balance'), numeric: true),
-                      DataColumn(label: Text('Status')),
-                    ],
-                    rows: [
-                      for (final bill in report.rows)
-                        DataRow(
-                          cells: [
-                            DataCell(Text(bill.roomNumber)),
-                            DataCell(Text(bill.tenantName)),
-                            DataCell(Text(formatDate(bill.dueDate))),
-                            DataCell(Text(peso(bill.amountDue))),
-                            DataCell(Text(peso(bill.amountPaid))),
-                            DataCell(Text(peso(bill.balance))),
-                            DataCell(StatusChip(bill.displayStatus)),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Phone: one card per bill, nothing is cut off.
+                  if (constraints.maxWidth < 720) {
+                    return Column(
+                      children: [
+                        for (final bill in report.rows) _BillCard(bill),
+                      ],
+                    );
+                  }
+                  return SectionCard(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columns: const [
+                          DataColumn(label: Text('Room')),
+                          DataColumn(label: Text('Tenant')),
+                          DataColumn(label: Text('Due date')),
+                          DataColumn(label: Text('Amount due'), numeric: true),
+                          DataColumn(label: Text('Paid'), numeric: true),
+                          DataColumn(label: Text('Balance'), numeric: true),
+                          DataColumn(label: Text('Status')),
+                        ],
+                        rows: [
+                          for (final bill in report.rows)
+                            DataRow(
+                              cells: [
+                                DataCell(Text(bill.roomNumber)),
+                                DataCell(Text(bill.tenantName)),
+                                DataCell(Text(formatDate(bill.dueDate))),
+                                DataCell(Text(peso(bill.amountDue))),
+                                DataCell(Text(peso(bill.amountPaid))),
+                                DataCell(Text(peso(bill.balance))),
+                                DataCell(StatusChip(bill.displayStatus)),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
           ],
         );
@@ -126,3 +138,43 @@ class _ReportsPageState extends State<ReportsPage> {
     );
   }
 }
+
+/// One bill of the monthly report, laid out for a narrow screen.
+class _BillCard extends StatelessWidget {
+  const _BillCard(this.bill);
+
+  final Bill bill;
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Room ${bill.roomNumber}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              StatusChip(bill.displayStatus),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(bill.tenantName),
+          const SizedBox(height: 8),
+          InfoRow('Due date', formatDate(bill.dueDate)),
+          InfoRow('Amount due', peso(bill.amountDue)),
+          InfoRow('Paid', peso(bill.amountPaid)),
+          InfoRow('Balance', peso(bill.balance)),
+        ],
+      ),
+    );
+  }
+}
+

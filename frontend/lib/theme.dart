@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 /// Brand colours taken from the Git-Inside logo (deep purple to pink).
@@ -48,10 +49,15 @@ PreferredSizeWidget brandAppBar(String title) {
   return AppBar(
     title: Text(title),
     foregroundColor: Colors.white,
-    backgroundColor: Colors.transparent,
+    // Solid purple underneath, so the white title is readable even if the
+    // gradient is not drawn. The gradient fills the whole bar on top of it.
+    backgroundColor: brandDeep,
     scrolledUnderElevation: 0,
-    flexibleSpace: const DecoratedBox(
-      decoration: BoxDecoration(gradient: brandGradient),
+    flexibleSpace: const SizedBox.expand(
+      child: DecoratedBox(
+        decoration: BoxDecoration(gradient: brandGradient),
+      ),
     ),
   );
 }
+

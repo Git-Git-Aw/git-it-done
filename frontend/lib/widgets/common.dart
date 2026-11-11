@@ -132,26 +132,49 @@ class PageList extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w700, color: brandDeep),
-                    ),
-                  ),
-                  ...actions,
-                  IconButton(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final titleText = Text(
+                    title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w700, color: brandDeep),
+                  );
+                  final refreshButton = IconButton(
                     tooltip: 'Refresh',
                     onPressed: () {
                       onRefresh();
                     },
                     icon: const Icon(Icons.refresh),
-                  ),
-                ],
+                  );
+                  // Wide screen (or nothing extra): title, buttons and
+                  // Refresh share one row, as before.
+                  if (actions.isEmpty || constraints.maxWidth >= 560) {
+                    return Row(
+                      children: [
+                        Expanded(child: titleText),
+                        ...actions,
+                        refreshButton,
+                      ],
+                    );
+                  }
+                  // Phone: the title keeps the full width and the buttons
+                  // go below it, so the title never wraps into many lines.
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: titleText),
+                          refreshButton,
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(spacing: 8, runSpacing: 8, children: actions),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 12),
               ...children,
@@ -544,3 +567,4 @@ class FilterChips extends StatelessWidget {
     );
   }
 }
+

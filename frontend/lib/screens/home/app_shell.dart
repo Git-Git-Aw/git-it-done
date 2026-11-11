@@ -192,18 +192,23 @@ class _AppShellState extends State<AppShell> {
   Future<void> _openMore() async {
     final chosen = await showModalBottomSheet<int>(
       context: context,
+      // The landlord has 8 pages under "More". The list scrolls when the
+      // screen is too short to show all of them.
+      isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = _primaryCount; i < _items.length; i++)
-              ListTile(
-                leading: _iconFor(_items[i], selected: i == _index),
-                title: Text(_items[i].label),
-                selected: i == _index,
-                onTap: () => Navigator.of(sheetContext).pop(i),
-              ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = _primaryCount; i < _items.length; i++)
+                ListTile(
+                  leading: _iconFor(_items[i], selected: i == _index),
+                  title: Text(_items[i].label),
+                  selected: i == _index,
+                  onTap: () => Navigator.of(sheetContext).pop(i),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -277,10 +282,14 @@ class _AppShellState extends State<AppShell> {
     final role = user.isLandlord ? 'Landlord' : 'Tenant';
     return AppBar(
       foregroundColor: Colors.white,
-      backgroundColor: Colors.transparent,
+      // Solid purple underneath, so the white title is readable even if the
+      // gradient is not drawn. The gradient fills the whole bar on top of it.
+      backgroundColor: brandDeep,
       scrolledUnderElevation: 0,
-      flexibleSpace: const DecoratedBox(
-        decoration: BoxDecoration(gradient: brandGradient),
+      flexibleSpace: const SizedBox.expand(
+        child: DecoratedBox(
+          decoration: BoxDecoration(gradient: brandGradient),
+        ),
       ),
       title: Row(
         children: [
@@ -317,6 +326,7 @@ class _AppShellState extends State<AppShell> {
 
     if (!wide) {
       final barIndex = _index < _primaryCount ? _index : _primaryCount;
+      final scheme = Theme.of(context).colorScheme;
       return Scaffold(
         appBar: _buildAppBar(false),
         body: Column(
@@ -325,28 +335,44 @@ class _AppShellState extends State<AppShell> {
             Expanded(child: page),
           ],
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: barIndex,
-          onDestinationSelected: (i) {
-            if (i < _primaryCount) {
-              _select(i);
-            } else {
-              _openMore();
-            }
-          },
-          destinations: [
-            for (var i = 0; i < _primaryCount; i++)
-              NavigationDestination(
-                icon: _iconFor(_items[i], selected: false),
-                selectedIcon: _iconFor(_items[i], selected: true),
-                label: _items[i].label,
-              ),
-            if (_hasMore)
-              NavigationDestination(
-                icon: _moreIcon(),
-                label: 'More',
-              ),
-          ],
+        // Five tabs share a narrow screen, so the labels are a little
+        // smaller (only for this bar). "Maintenance" then fits on one line.
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            navigationBarTheme: NavigationBarThemeData(
+              labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                final selected = states.contains(WidgetState.selected);
+                return TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                );
+              }),
+            ),
+          ),
+          child: NavigationBar(
+            selectedIndex: barIndex,
+            onDestinationSelected: (i) {
+              if (i < _primaryCount) {
+                _select(i);
+              } else {
+                _openMore();
+              }
+            },
+            destinations: [
+              for (var i = 0; i < _primaryCount; i++)
+                NavigationDestination(
+                  icon: _iconFor(_items[i], selected: false),
+                  selectedIcon: _iconFor(_items[i], selected: true),
+                  label: _items[i].label,
+                ),
+              if (_hasMore)
+                NavigationDestination(
+                  icon: _moreIcon(),
+                  label: 'More',
+                ),
+            ],
+          ),
         ),
       );
     }
@@ -393,3 +419,4 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
+
