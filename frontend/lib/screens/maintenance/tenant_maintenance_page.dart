@@ -89,10 +89,12 @@ class _ReportCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(report.description),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               StatusChip(report.urgency, label: '${titleCase(report.urgency)} urgency'),
-              const SizedBox(width: 8),
               Text(
                 'Room ${report.roomNumber}, sent ${formatDate(report.createdAt)}',
                 style: theme.textTheme.bodySmall,
@@ -114,3 +116,4 @@ class _ReportCard extends StatelessWidget {
     );
   }
 }
+

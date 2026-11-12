@@ -18,21 +18,54 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Git-Inside: Dormitory Tenant and Landlord Management System.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="git_inside">
+  <meta name="apple-mobile-web-app-title" content="Git-Inside">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>git_inside</title>
+  <title>Git-Inside</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #6D28D9; }
+    #gi-loading {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(45deg, #6D28D9, #A855F7, #C026D3);
+      color: #fff; font-family: Roboto, "Segoe UI", Arial, sans-serif;
+      transition: opacity 0.35s ease;
+    }
+    #gi-loading .gi-name { font-size: 34px; font-weight: 800; letter-spacing: 0.3px; }
+    #gi-loading .gi-tag { margin-top: 6px; font-size: 14px; opacity: 0.8; }
+    #gi-loading .gi-spin {
+      margin-top: 28px; width: 34px; height: 34px; border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.3); border-top-color: #fff;
+      animation: gi-rotate 0.9s linear infinite;
+    }
+    @keyframes gi-rotate { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="gi-loading">
+    <div class="gi-name">Git-Inside</div>
+    <div class="gi-tag">Dormitory Tenant and Landlord Management System</div>
+    <div class="gi-spin"></div>
+  </div>
+  <script>
+    // Removes the loading screen when Flutter draws its first frame.
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('gi-loading');
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 400);
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -44,3 +77,4 @@
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
+

@@ -205,26 +205,26 @@ class SectionCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 4,
-                  height: 18,
+                  width: 5,
+                  height: 20,
                   decoration: BoxDecoration(
                     gradient: brandGradient,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     title!,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                        ?.copyWith(fontWeight: FontWeight.w700, color: inkDark),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
           ],
           child,
         ],
@@ -251,7 +251,7 @@ class InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 130,
-            child: Text(label, style: TextStyle(color: Theme.of(context).hintColor)),
+            child: Text(label, style: const TextStyle(color: inkSoft)),
           ),
           Expanded(
             child: child == null
@@ -303,14 +303,31 @@ class StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _color();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        label ?? statusLabel(status),
-        style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label ?? statusLabel(status),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -337,9 +354,12 @@ class MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = color ?? brandDeep;
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 260,
-      child: Container(
+    return LayoutBuilder(
+      builder: (context, constraints) => SizedBox(
+        // On a phone the card fills the row. On a wide screen it keeps its
+        // size, so several cards sit side by side.
+        width: constraints.maxWidth < 532 ? constraints.maxWidth : 260,
+        child: Container(
         padding: const EdgeInsets.all(16),
         decoration: cardDecoration(),
         child: Row(
@@ -351,7 +371,7 @@ class MetricCard extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
@@ -361,13 +381,13 @@ class MetricCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: TextStyle(color: theme.hintColor)),
+                  Text(label, style: const TextStyle(color: inkSoft)),
                   const SizedBox(height: 6),
                   Text(
                     value,
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
+                      color: color ?? inkDark,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   if (footnote != null) ...[
@@ -378,6 +398,7 @@ class MetricCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -405,13 +426,51 @@ class HeroCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: brandGradient,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(radiusL),
         boxShadow: softShadow,
       ),
-      child: Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radiusL),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -30,
+              top: -40,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 40,
+              bottom: -50,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: _heroRow(theme),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _heroRow(ThemeData theme) {
+    return Row(
         children: [
           Expanded(
             child: Column(
@@ -436,7 +495,6 @@ class HeroCard extends StatelessWidget {
           const SizedBox(width: 12),
           Icon(icon, size: 44, color: Colors.white54),
         ],
-      ),
     );
   }
 }
@@ -567,4 +625,5 @@ class FilterChips extends StatelessWidget {
     );
   }
 }
+
 
