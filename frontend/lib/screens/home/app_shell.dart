@@ -195,6 +195,11 @@ class _AppShellState extends State<AppShell> {
       // The landlord has 8 pages under "More". The list scrolls when the
       // screen is too short to show all of them.
       isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) => SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -205,6 +210,7 @@ class _AppShellState extends State<AppShell> {
                   leading: _iconFor(_items[i], selected: i == _index),
                   title: Text(_items[i].label),
                   selected: i == _index,
+                  selectedColor: brandDeep,
                   onTap: () => Navigator.of(sheetContext).pop(i),
                 ),
             ],
@@ -251,7 +257,7 @@ class _AppShellState extends State<AppShell> {
       builder: (context, since, _) {
         if (since == null) return const SizedBox.shrink();
         return Material(
-          color: Colors.amber.shade100,
+          color: Colors.amber.shade50,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
@@ -277,9 +283,32 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  /// Two letters from the user's name, for the avatar.
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  }
+
   PreferredSizeWidget _buildAppBar(bool wide) {
     final user = widget.user;
     final role = user.isLandlord ? 'Landlord' : 'Tenant';
+    final avatar = Tooltip(
+      message: '$role: ${user.fullName}',
+      child: CircleAvatar(
+        radius: 17,
+        backgroundColor: Colors.white,
+        child: Text(
+          _initials(user.fullName),
+          style: const TextStyle(
+            color: brandDeep,
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
     return AppBar(
       foregroundColor: Colors.white,
       // Solid purple underneath, so the white title is readable even if the
@@ -293,22 +322,41 @@ class _AppShellState extends State<AppShell> {
       ),
       title: Row(
         children: [
-          Image.asset('assets/logo.png', height: 30),
+          const LogoTile(size: 34),
           const SizedBox(width: 10),
-          const Text('Git-Inside'),
+          const Text(
+            'Git-Inside',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.2),
+          ),
         ],
       ),
       actions: [
-        if (wide)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Text(
-                '$role: ${user.fullName}',
-                style: const TextStyle(color: Colors.white),
-              ),
+        Center(
+          child: Container(
+            margin: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.fromLTRB(4, 4, wide ? 14 : 4, 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                avatar,
+                if (wide) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '$role: ${user.fullName}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+        ),
       ],
     );
   }
@@ -326,7 +374,6 @@ class _AppShellState extends State<AppShell> {
 
     if (!wide) {
       final barIndex = _index < _primaryCount ? _index : _primaryCount;
-      final scheme = Theme.of(context).colorScheme;
       return Scaffold(
         appBar: _buildAppBar(false),
         body: Column(
@@ -345,12 +392,15 @@ class _AppShellState extends State<AppShell> {
                 return TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
+                  color: selected ? brandDeep : inkSoft,
                 );
               }),
             ),
           ),
           child: NavigationBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: brandPurple.withValues(alpha: 0.20),
             selectedIndex: barIndex,
             onDestinationSelected: (i) {
               if (i < _primaryCount) {
@@ -388,6 +438,13 @@ class _AppShellState extends State<AppShell> {
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: NavigationRail(
+                    backgroundColor: Colors.white,
+                    indicatorColor: brandPurple.withValues(alpha: 0.20),
+                    selectedIconTheme: const IconThemeData(color: brandDeep),
+                    selectedLabelTextStyle: const TextStyle(
+                      color: brandDeep,
+                      fontWeight: FontWeight.w700,
+                    ),
                     selectedIndex: _index,
                     onDestinationSelected: _select,
                     extended: extended,
@@ -405,7 +462,7 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ),
-          const VerticalDivider(width: 1),
+          const VerticalDivider(width: 1, color: lineSoft),
           Expanded(
             child: Column(
               children: [
@@ -419,4 +476,5 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
+
 
