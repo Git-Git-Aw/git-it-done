@@ -656,7 +656,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Dan Lim\",\n  \"email\": \"dan@gitinside.test\",\n  \"password\": \"Tenant123!\",\n  \"contactNumber\": \"09175550000\"\n}",
+              "raw": "{\n  \"fullName\": \"Dan Lim\",\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"Tenant123!\",\n  \"contactNumber\": \"09175550000\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
