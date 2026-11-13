@@ -22,7 +22,7 @@ The system runs on a local development server (localhost). Online payment gatewa
 
 ## Repository Structure
 - `backend/`: Node.js, Express, MySQL (API on http://localhost:3000)
-- `frontend/`: Flutter (mobile, web, desktop) - in development
+- `frontend/`: Flutter (mobile, web, desktop)
 
 Backend and frontend are kept in separate folders, run independently, and never share code.
 
@@ -30,9 +30,9 @@ Backend and frontend are kept in separate folders, run independently, and never 
 **Team name:** Git Git Aw - CS-B | **Group:** 3
 **Submitted to:** Sir Henzon Paul Dionsay
 
-- Team Leader: Karl Capilitan (main), Jessa Languido (support)
+- Team Leader: Karl Capilitan
 - Project Manager: Jannyl Santillas (main), Kent Dampayla (support), Lynde Narvaez (support)
-- Developer: Jessa Languido (main), Karl Capilitan (support)
+- Developer: Jessa Languido
 - QA: Lynde Narvaez (main), Kent Dampayla (support), Jannyl Santillas (support)
 
 ## Setup Instructions
@@ -50,7 +50,7 @@ Backend and frontend are kept in separate folders, run independently, and never 
 4. Optional demo data (this wipes the tables): `npm run seed`
 5. Run `npm run dev`, then open http://localhost:3000/api/health to check.
 
-**Frontend** (in development)
+**Frontend**
 1. Open the `frontend/` folder and run `flutter pub get`.
 2. Make sure the backend is running, then run `flutter run -d chrome` (or use an emulator or desktop). An Android emulator reaches the backend at `http://10.0.2.2:3000`, not `localhost`.
 
