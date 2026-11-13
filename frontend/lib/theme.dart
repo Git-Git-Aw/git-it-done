@@ -19,6 +19,21 @@ const double spaceL = 24;
 const double radiusM = 14;
 const double radiusL = 20;
 
+/// Widest a page may grow on a big screen (the side bar stays on the left).
+const double pageMaxWidth = 1200;
+
+/// Rounded look shared by pop-up dialogs.
+const ShapeBorder dialogShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(radiusL)),
+);
+
+/// Title style shared by pop-up dialogs.
+const TextStyle dialogTitleStyle = TextStyle(
+  fontSize: 20,
+  fontWeight: FontWeight.w700,
+  color: inkDark,
+);
+
 const LinearGradient brandGradient = LinearGradient(
   begin: Alignment.bottomLeft,
   end: Alignment.topRight,
@@ -48,9 +63,17 @@ ThemeData buildTheme() {
   );
 }
 
-InputDecoration fieldDecoration(String label, {IconData? icon, Widget? suffix}) {
+InputDecoration fieldDecoration(
+  String label, {
+  IconData? icon,
+  Widget? suffix,
+  String? hint,
+  bool alignLabelWithHint = false,
+}) {
   return InputDecoration(
     labelText: label,
+    hintText: hint,
+    alignLabelWithHint: alignLabelWithHint,
     prefixIcon: icon == null ? null : Icon(icon),
     suffixIcon: suffix,
     filled: true,
@@ -87,7 +110,7 @@ PreferredSizeWidget brandAppBar(String title) {
   );
 }
 
-/// The Git-Inside logo on a soft white tile, so it stays clear on the gradient.
+/// The Git-Inside logo with rounded corners (no extra white ring around it).
 class LogoTile extends StatelessWidget {
   const LogoTile({super.key, this.size = 36});
 
@@ -98,13 +121,12 @@ class LogoTile extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      padding: EdgeInsets.all(size * 0.05),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(size * 0.28),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(size * 0.23),
+        borderRadius: BorderRadius.circular(size * 0.28),
         child: Image.asset('assets/logo.png', fit: BoxFit.cover),
       ),
     );

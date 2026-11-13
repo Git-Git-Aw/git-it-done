@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../app_services.dart';
 import '../../models/models.dart';
+import '../../theme.dart';
 import '../../utils/format.dart';
 import '../../utils/options.dart';
 import '../../utils/photo_picker.dart';
@@ -44,7 +45,11 @@ class TenantPaymentsPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Bills to pay', style: theme.textTheme.titleMedium),
+            Text(
+              'Bills to pay',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, color: inkDark),
+            ),
             const SizedBox(height: 8),
             if (open.isEmpty)
               const SectionCard(
@@ -53,7 +58,11 @@ class TenantPaymentsPage extends StatelessWidget {
             else
               for (final bill in open) _BillCard(bill: bill, onChanged: refresh),
             const SizedBox(height: 8),
-            Text('Payment history', style: theme.textTheme.titleMedium),
+            Text(
+              'Payment history',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, color: inkDark),
+            ),
             const SizedBox(height: 8),
             if (paid.isEmpty)
               const SectionCard(child: Text('No payments yet.'))
@@ -142,15 +151,25 @@ class _HistoryTile extends StatelessWidget {
     final when = formatDate(bill.paidAt ?? bill.dueDate);
     final method = bill.method;
     final subtitle = method == null ? 'Paid on $when' : 'Paid on $when via $method';
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(Icons.check_circle, color: Colors.green.shade700),
-        title: Text(monthLabel(bill.period)),
-        subtitle: Text(subtitle),
-        trailing: Text(
-          peso(bill.amountPaid),
-          style: const TextStyle(fontWeight: FontWeight.w600),
+      decoration: cardDecoration(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(radiusL)),
+          ),
+          leading: Icon(Icons.check_circle, color: Colors.green.shade700),
+          title: Text(
+            monthLabel(bill.period),
+            style: const TextStyle(fontWeight: FontWeight.w600, color: inkDark),
+          ),
+          subtitle: Text(subtitle, style: const TextStyle(color: inkSoft)),
+          trailing: Text(
+            peso(bill.amountPaid),
+            style: const TextStyle(fontWeight: FontWeight.w700, color: inkDark),
+          ),
         ),
       ),
     );
@@ -220,7 +239,13 @@ class _ProofDialogState extends State<_ProofDialog> {
     final bill = widget.bill;
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text('Proof of payment for ${monthLabel(bill.period)}'),
+      shape: dialogShape,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      title: Text(
+        'Proof of payment for ${monthLabel(bill.period)}',
+        style: dialogTitleStyle,
+      ),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -242,6 +267,13 @@ class _ProofDialogState extends State<_ProofDialog> {
                       label: Text(method),
                       selected: _method == method,
                       onSelected: _busy ? null : (_) => setState(() => _method = method),
+                      backgroundColor: Colors.white,
+                      selectedColor: brandPurple.withValues(alpha: 0.18),
+                      checkmarkColor: brandDeep,
+                      shape: const StadiumBorder(),
+                      side: BorderSide(
+                        color: _method == method ? brandPurple : lineSoft,
+                      ),
                     ),
                 ],
               ),
@@ -255,10 +287,7 @@ class _ProofDialogState extends State<_ProofDialog> {
               TextField(
                 controller: _remarks,
                 maxLength: 100,
-                decoration: const InputDecoration(
-                  labelText: 'Note for the landlord (optional)',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: fieldDecoration('Note for the landlord (optional)'),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
@@ -287,4 +316,3 @@ class _ProofDialogState extends State<_ProofDialog> {
     );
   }
 }
-

@@ -206,16 +206,16 @@ class _ChatViewState extends State<ChatView> {
           children: [
             Container(
               width: double.infinity,
-              color: scheme.primaryContainer,
+              color: brandPurple.withValues(alpha: 0.10),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.smart_toy_outlined, color: scheme.onPrimaryContainer),
+                  const Icon(Icons.smart_toy_outlined, color: brandDeep),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _intro,
-                      style: TextStyle(color: scheme.onPrimaryContainer, fontSize: 13),
+                      style: const TextStyle(color: inkDark, fontSize: 13),
                     ),
                   ),
                 ],
@@ -255,12 +255,15 @@ class _ChatViewState extends State<ChatView> {
           children: [
             Text(
               'AI Dorm Manager',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w800, color: brandDeep),
             ),
             const SizedBox(height: 4),
             Text(
               'Try one of these, or type your own question.',
-              style: TextStyle(color: Theme.of(context).hintColor),
+              style: const TextStyle(color: inkSoft),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -272,6 +275,13 @@ class _ChatViewState extends State<ChatView> {
                   ActionChip(
                     label: Text(text),
                     onPressed: _sending ? null : () => _send(text),
+                    backgroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    side: const BorderSide(color: lineSoft),
+                    labelStyle: const TextStyle(
+                      color: brandDeep,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
               ],
             ),
@@ -318,16 +328,31 @@ class _ChatViewState extends State<ChatView> {
                 maxLength: 1000,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _send(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Type your message',
                   counterText: '',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: lineSoft),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: lineSoft),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: brandPurple, width: 2),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
             IconButton.filled(
+              style: IconButton.styleFrom(backgroundColor: brandDeep),
               tooltip: 'Send',
               onPressed: _sending ? null : () => _send(),
               icon: const Icon(Icons.send),
@@ -455,11 +480,13 @@ class _ActionCard extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
-        child: Card(
+        child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(radiusM),
+            border: Border.all(color: brandPurple, width: 1.5),
+            boxShadow: softShadow,
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -468,12 +495,13 @@ class _ActionCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.fact_check_outlined, color: theme.colorScheme.primary),
+                    const Icon(Icons.fact_check_outlined, color: brandDeep),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _actionTitle(pending.tool),
-                        style: theme.textTheme.titleSmall,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700, color: inkDark),
                       ),
                     ),
                   ],
@@ -538,4 +566,3 @@ class _ActionCard extends StatelessWidget {
     );
   }
 }
-
