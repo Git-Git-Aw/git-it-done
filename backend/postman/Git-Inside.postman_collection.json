@@ -2612,7 +2612,7 @@
                 }
               }
             },
-            "description": "Needs ANTHROPIC_API_KEY in .env and internet. 503 = no key, 502 = no internet."
+            "description": "Needs AI_BASE_URL, AI_API_KEY and AI_MODEL in .env and internet. 503 = AI not set up, 502 = AI provider unreachable or error."
           },
           "event": [
             {
