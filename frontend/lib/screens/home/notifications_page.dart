@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app_services.dart';
 import '../../models/models.dart';
+import '../../theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
 
@@ -83,24 +84,48 @@ class NotificationsPage extends StatelessWidget {
               )
             else
               for (final item in result.items)
-                Card(
+                Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      _iconFor(item.type),
-                      color: item.isRead ? Theme.of(context).hintColor : Theme.of(context).colorScheme.primary,
-                    ),
-                    title: Text(
-                      item.message,
-                      style: TextStyle(
-                        fontWeight: item.isRead ? FontWeight.normal : FontWeight.w600,
+                  decoration: cardDecoration(
+                    color: item.isRead ? Colors.white : const Color(0xFFFBF7FF),
+                  ),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: ListTile(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(radiusL)),
                       ),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: (item.isRead ? inkSoft : brandDeep)
+                              .withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _iconFor(item.type),
+                          size: 22,
+                          color: item.isRead ? inkSoft : brandDeep,
+                        ),
+                      ),
+                      title: Text(
+                        item.message,
+                        style: TextStyle(
+                          fontWeight:
+                              item.isRead ? FontWeight.w400 : FontWeight.w700,
+                          color: inkDark,
+                        ),
+                      ),
+                      subtitle: Text(
+                        formatDateTime(item.createdAt),
+                        style: const TextStyle(color: inkSoft),
+                      ),
+                      trailing: item.isRead
+                          ? null
+                          : const Icon(Icons.circle, size: 10, color: brandPink),
+                      onTap: item.isRead ? null : () => _markRead(context, item, refresh),
                     ),
-                    subtitle: Text(formatDateTime(item.createdAt)),
-                    trailing: item.isRead
-                        ? null
-                        : Icon(Icons.circle, size: 10, color: Theme.of(context).colorScheme.primary),
-                    onTap: item.isRead ? null : () => _markRead(context, item, refresh),
                   ),
                 ),
           ],

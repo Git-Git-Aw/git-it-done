@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../app_services.dart';
 import '../../config.dart';
 import '../../models/models.dart';
+import '../../theme.dart';
 import '../../utils/format.dart';
 import '../../widgets/common.dart';
 import '../../widgets/form_dialog.dart';
@@ -170,16 +171,16 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   }
 
   InputDecoration _decoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      border: const OutlineInputBorder(),
-    );
+    return fieldDecoration(label);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Change password'),
+      shape: dialogShape,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      title: const Text('Change password', style: dialogTitleStyle),
       content: SizedBox(
         width: 360,
         child: SingleChildScrollView(
@@ -237,4 +238,3 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     );
   }
 }
-

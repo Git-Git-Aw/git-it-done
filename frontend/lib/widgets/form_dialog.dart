@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
+import '../theme.dart';
 import 'common.dart';
 
 enum FieldKind { text, number, multiline, password, date, choice, toggle }
@@ -70,7 +71,10 @@ Future<bool> confirmDialog(
   final result = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text(title),
+      shape: dialogShape,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      title: Text(title, style: dialogTitleStyle),
       content: Text(message),
       actions: [
         TextButton(
@@ -252,6 +256,13 @@ class _FormDialogState extends State<_FormDialog> {
                     label: Text(option),
                     selected: _choices[field.key] == option,
                     onSelected: _busy ? null : (_) => setState(() => _choices[field.key] = option),
+                    backgroundColor: Colors.white,
+                    selectedColor: brandPurple.withValues(alpha: 0.18),
+                    checkmarkColor: brandDeep,
+                    shape: const StadiumBorder(),
+                    side: BorderSide(
+                      color: _choices[field.key] == option ? brandPurple : lineSoft,
+                    ),
                   ),
               ],
             ),
@@ -270,11 +281,10 @@ class _FormDialogState extends State<_FormDialog> {
           controller: controller,
           readOnly: true,
           onTap: _busy ? null : () => _pickDate(field),
-          decoration: InputDecoration(
-            labelText: field.label,
-            hintText: field.hint ?? 'Tap to pick a date',
-            border: const OutlineInputBorder(),
-            suffixIcon: Row(
+          decoration: fieldDecoration(
+            field.label,
+            hint: field.hint ?? 'Tap to pick a date',
+            suffix: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!field.required && controller.text.isNotEmpty)
@@ -305,11 +315,10 @@ class _FormDialogState extends State<_FormDialog> {
           maxLines: multiline ? 6 : 1,
           maxLength: field.maxLength,
           enabled: !_busy,
-          decoration: InputDecoration(
-            labelText: field.label,
-            hintText: field.hint,
+          decoration: fieldDecoration(
+            field.label,
+            hint: field.hint,
             alignLabelWithHint: multiline,
-            border: const OutlineInputBorder(),
           ),
           validator: (value) => _validate(field, value),
         );
@@ -320,7 +329,10 @@ class _FormDialogState extends State<_FormDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: Text(widget.title),
+      shape: dialogShape,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      title: Text(widget.title, style: dialogTitleStyle),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(

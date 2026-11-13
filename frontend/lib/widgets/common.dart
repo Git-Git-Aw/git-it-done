@@ -89,7 +89,15 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48),
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: brandPurple.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.cloud_off, size: 40, color: brandDeep),
+            ),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -127,7 +135,7 @@ class PageList extends StatelessWidget {
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: const BoxConstraints(maxWidth: pageMaxWidth),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
@@ -511,11 +519,17 @@ class PlainPage extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900),
+        constraints: const BoxConstraints(maxWidth: pageMaxWidth),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.w700, color: brandDeep),
+            ),
             const SizedBox(height: 12),
             ...children,
           ],
@@ -571,26 +585,34 @@ class MonthBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          tooltip: 'Previous month',
-          onPressed: () => _shift(-1),
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: Text(
-            monthLabel(period),
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      decoration: cardDecoration(),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Previous month',
+            color: brandDeep,
+            onPressed: () => _shift(-1),
+            icon: const Icon(Icons.chevron_left),
           ),
-        ),
-        IconButton(
-          tooltip: 'Next month',
-          onPressed: () => _shift(1),
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
+          Expanded(
+            child: Text(
+              monthLabel(period),
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, color: inkDark),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Next month',
+            color: brandDeep,
+            onPressed: () => _shift(1),
+            icon: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -620,10 +642,20 @@ class FilterChips extends StatelessWidget {
             label: Text(entry.value),
             selected: selected == entry.key,
             onSelected: (_) => onSelected(entry.key),
+            backgroundColor: Colors.white,
+            selectedColor: brandPurple.withValues(alpha: 0.18),
+            checkmarkColor: brandDeep,
+            shape: const StadiumBorder(),
+            side: BorderSide(
+              color: selected == entry.key ? brandPurple : lineSoft,
+            ),
+            labelStyle: TextStyle(
+              color: selected == entry.key ? brandDeep : inkDark,
+              fontWeight:
+                  selected == entry.key ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
       ],
     );
   }
 }
-
-
