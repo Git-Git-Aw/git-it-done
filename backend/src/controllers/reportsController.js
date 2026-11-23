@@ -1,5 +1,5 @@
 const { Payment, Lease, Room, User } = require('../models');
-const { presentPayment, currentPeriod, isPeriod } = require('../utils/helpers');
+const { asyncHandler, presentPayment, currentPeriod, isPeriod } = require('../utils/helpers');
 
 const csvCell = (v) => {
   let s = v === null || v === undefined ? '' : String(v);
@@ -7,7 +7,8 @@ const csvCell = (v) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-exports.monthly = async (req, res) => {
+// Monthly payment summary: GET /api/reports/monthly?month=YYYY-MM&format=csv|json
+const monthly = asyncHandler(async (req, res) => {
   const month = req.query.month || currentPeriod();
   if (!isPeriod(month)) return res.status(400).json({ message: 'month must be YYYY-MM' });
   const rows = (await Payment.findAll({
@@ -36,4 +37,6 @@ exports.monthly = async (req, res) => {
     return res.send(lines.join('\n'));
   }
   res.json({ month, totals, rows });
-};
+});
+
+module.exports = { monthly };

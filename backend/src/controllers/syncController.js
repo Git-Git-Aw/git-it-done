@@ -1,8 +1,9 @@
 const { Op } = require('sequelize');
 const { Payment, MaintenanceReport, Announcement, Notification, Lease, Room, User } = require('../models');
-const { presentPayment } = require('../utils/helpers');
+const { asyncHandler, presentPayment } = require('../utils/helpers');
 
-exports.changes = async (req, res) => {
+// GET /api/sync?since=<ISO timestamp>  -> everything the caller can see that changed after "since"
+const sync = asyncHandler(async (req, res) => {
   const since = req.query.since ? new Date(req.query.since) : new Date(0);
   if (Number.isNaN(since.getTime())) return res.status(400).json({ message: 'since must be an ISO timestamp' });
   const serverTime = new Date().toISOString();
@@ -24,4 +25,6 @@ exports.changes = async (req, res) => {
     payload.tenants = await User.findAll({ where: { ...changed, role: 'tenant' } });
   }
   res.json(payload);
-};
+});
+
+module.exports = { sync };

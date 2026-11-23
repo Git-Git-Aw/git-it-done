@@ -1,11 +1,9 @@
 const router = require('express').Router();
 const { auth, requireRole } = require('../middleware/auth');
-const { asyncHandler } = require('../utils/helpers');
-const c = require('../controllers/inquiries');
+const ctrl = require('../controllers/inquiriesController');
 
 router.use(auth, requireRole('landlord'));
-
-router.get('/', asyncHandler(c.list));
-router.patch('/:id', asyncHandler(c.update));
+router.get('/', ctrl.list);
+router.patch('/:id', ctrl.update);
 
 module.exports = router;
