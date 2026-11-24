@@ -16,6 +16,25 @@ REST API for the Git-Inside dormitory tenant and landlord management system, inc
 
 The server listens on `0.0.0.0:3000`, so a phone on the same Wi-Fi can reach it at `http://<your-PC-IP>:3000`. The Android emulator uses `http://10.0.2.2:3000`.
 
+## Project structure (MVC)
+```
+backend/src/
+  app.js          Builds the Express app: middleware, /api/health, mounts the routes under /api, error handlers
+  routes/         Routes only: URL, method and the auth, role, upload and rate limit middleware of each endpoint
+    index.js      Mounts every module router under /api
+  controllers/    One controller per module: the request handlers and their helpers
+  models/         Sequelize models
+  middleware/, services/, utils/, ai/    Shared code used by the routes and controllers
+```
+Request flow: `app.js` > `routes/index.js` > `routes/<module>.js` (auth and role checks) > `controllers/<module>Controller.js` > models and services.
+
+Each module has a route file and a controller with the same name, for example `routes/rooms.js` and `controllers/roomsController.js`.
+
+## Start procedure
+1. Start MySQL in XAMPP and finish the **Setup (XAMPP)** steps above (once).
+2. In this folder run `npm run dev` (auto restart) or `npm start`. Both scripts are defined in `package.json` and start the server entry file, which loads `src/app.js`.
+3. Open http://localhost:3000/api/health. It must show `{"status":"ok","app":"Git-Inside API"}`.
+
 ## AI provider setup
 The AI Dorm Manager works with any provider that offers an OpenAI-compatible `/chat/completions` endpoint with tool calling. No paid service is needed. Put these in `backend/.env` (never commit it):
 
