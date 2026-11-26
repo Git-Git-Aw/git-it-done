@@ -1,7 +1,8 @@
-// WARNING: drops and recreates all tables, then inserts demo data. Development only.
+// WARNING: deletes every row from every table, then inserts demo data. Development only.
+// The tables must already exist: run `npm run migrate` first.
 require('dotenv').config();
 const bcrypt = require('bcrypt');
-const { sequelize, User, Room, Lease, Payment, MaintenanceReport, Announcement, DormInfo, VisitorInquiry } = require('../src/models');
+const { sequelize, User, Room, Lease, Payment, MaintenanceReport, Announcement, Notification, DormInfo, VisitorInquiry, AiPendingAction, Category } = require('../src/models');
 const { currentPeriod, dueDateFor } = require('../src/utils/helpers');
 
 const prevPeriod = () => {
@@ -10,7 +11,11 @@ const prevPeriod = () => {
 };
 
 (async () => {
-  await sequelize.sync({ force: true });
+  // Wipe the demo data (children first) and restart the ids. No tables are created or dropped here.
+  for (const Model of [Payment, MaintenanceReport, Lease, Announcement, Notification, AiPendingAction, VisitorInquiry, DormInfo, Room, User, Category]) {
+    await Model.destroy({ where: {} });
+    if (Model.rawAttributes.id.autoIncrement) await sequelize.query(`ALTER TABLE ${Model.getTableName()} AUTO_INCREMENT = 1`);
+  }
   const hash = (p) => bcrypt.hash(p, 10);
 
   const landlord = await User.create({ fullName: 'Demo Landlord', email: 'landlord@gitinside.test', passwordHash: await hash('Landlord123!'), role: 'landlord', status: 'active', contactNumber: '09170000000' });

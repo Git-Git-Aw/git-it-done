@@ -43,12 +43,13 @@ Backend and frontend are kept in separate folders, run independently, and never 
    `git config --global user.email "you@example.com"`
 
 **Backend**
-1. Start MySQL in XAMPP. Create the database and tables by importing `backend/database/schema.sql` (phpMyAdmin: Import tab), or from the `backend/` folder run:
+1. Start MySQL in XAMPP. Create the empty database by importing `backend/database/schema.sql` (phpMyAdmin: Import tab), or from the `backend/` folder run:
    `cmd /c "C:\xampp\mysql\bin\mysql.exe -u root < database\schema.sql"`
 2. Open the `backend/` folder and run `npm install`.
 3. Copy `.env.example` to `.env` and fill in your MySQL details (XAMPP default: user `root`, empty password), a long `JWT_SECRET`, and the free AI provider settings (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) for the AI feature. See `backend/README.md` for details. Never commit `.env`.
-4. Optional demo data (this wipes the tables): `npm run seed`
-5. Run `npm run dev`, then open http://localhost:3000/api/health to check.
+4. Create the tables (migrations, run by you only): `npm run migrate`
+5. Optional demo data (this deletes all rows first, needs step 4): `npm run seed`
+6. Run `npm run dev`, then open http://localhost:3000/api/health to check.
 
 **Frontend**
 1. Open the `frontend/` folder and run `flutter pub get`.

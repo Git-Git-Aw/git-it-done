@@ -4,15 +4,16 @@ REST API for the Git-Inside dormitory tenant and landlord management system, inc
 
 ## Setup (XAMPP)
 1. Install Node.js (LTS, 18 or newer) and XAMPP. Start **MySQL** in the XAMPP Control Panel.
-2. Open phpMyAdmin (http://localhost/phpmyadmin), click **Import**, choose `database/schema.sql`, click **Import**. This creates the `git_inside` database and its tables.
+2. Open phpMyAdmin (http://localhost/phpmyadmin), click **Import**, choose `database/schema.sql`, click **Import**. This creates only the empty `git_inside` database. The tables are created by the migrations in step 5.
 3. In this folder run `npm install`.
 4. Copy `.env.example` to `.env` and fill it in:
    - `DB_USER=root` and an empty `DB_PASS` (XAMPP default)
    - `JWT_SECRET`: a long random string
    - `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`: needed only for the AI chatbox (see **AI provider setup** below)
-5. Optional demo data (**wipes the tables**): `npm run seed`
-6. Start: `npm run dev` (auto-restart) or `npm start`
-7. Check: http://localhost:3000/api/health
+5. Create the tables (migrations, run by you only): `npm run migrate`
+6. Optional demo data (**deletes all rows first**, needs step 5): `npm run seed`
+7. Start: `npm run dev` (auto-restart) or `npm start`
+8. Check: http://localhost:3000/api/health
 
 The server listens on `0.0.0.0:3000`, so a phone on the same Wi-Fi can reach it at `http://<your-PC-IP>:3000`. The Android emulator uses `http://10.0.2.2:3000`.
 
@@ -23,17 +24,31 @@ backend/src/
   routes/         Routes only: URL, method and the auth, role, upload and rate limit middleware of each endpoint
     index.js      Mounts every module router under /api
   controllers/    One controller per module: the request handlers and their helpers
-  models/         Sequelize models
+  models/         Sequelize models, one file per model (data and queries only). index.js loads them and sets the associations
   middleware/, services/, utils/, ai/    Shared code used by the routes and controllers
+```
+```
+backend/database/
+  schema.sql      Creates only the empty git_inside database
+  migrations/     Table creation only: 001_create_core_tables.js, 002_create_categories.js
+  migrate.js      Migration runner (manual: npm run migrate)
+  seed.js         Demo data (deletes all rows first, needs the tables from the migrations)
 ```
 Request flow: `app.js` > `routes/index.js` > `routes/<module>.js` (auth and role checks) > `controllers/<module>Controller.js` > models and services.
 
 Each module has a route file and a controller with the same name, for example `routes/rooms.js` and `controllers/roomsController.js`.
 
 ## Start procedure
-1. Start MySQL in XAMPP and finish the **Setup (XAMPP)** steps above (once).
+1. Start MySQL in XAMPP and finish the **Setup (XAMPP)** steps above (once), including `npm run migrate`.
 2. In this folder run `npm run dev` (auto restart) or `npm start`. Both scripts are defined in `package.json` and start the server entry file, which loads `src/app.js`.
 3. Open http://localhost:3000/api/health. It must show `{"status":"ok","app":"Git-Inside API"}`.
+
+## Models and migrations
+- **Models** (`src/models/*.js`) describe the data and are used for queries. They never create tables.
+- **Migrations** (`database/migrations/`) create the tables with SQL queries. The server and the seed script never create or change tables.
+- Migrations run only when you run them: `npm run migrate` applies the pending ones (remembered in the `schema_migrations` table), `npm run migrate:undo` undoes the last one (it drops those tables and their data).
+- The `categories` table (id, name unique, created_at, updated_at) is created by `002_create_categories.js`.
+- To change a table later, add a new numbered file in `database/migrations/` with `up` and `down`, then run `npm run migrate`.
 
 ## AI provider setup
 The AI Dorm Manager works with any provider that offers an OpenAI-compatible `/chat/completions` endpoint with tool calling. No paid service is needed. Put these in `backend/.env` (never commit it):

@@ -7,7 +7,6 @@ const PORT = process.env.PORT || 3000;
 (async () => {
   try {
     await sequelize.authenticate();
-    if (process.env.DB_SYNC === 'true') await sequelize.sync();
     console.log('MySQL connected');
     app.listen(PORT, '0.0.0.0', () => console.log(`Git-Inside API running at http://localhost:${PORT}`));
   } catch (err) {
